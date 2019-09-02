@@ -1,1 +1,1 @@
-export { Greeter } from './greeter'
+export { Player } from './player'

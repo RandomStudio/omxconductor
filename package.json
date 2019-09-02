@@ -76,7 +76,9 @@
   "peerDependencies": {
     "tslib": ">=1.9.0"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@types/json5": "0.0.30"
+  },
   "devDependencies": {
     "@commitlint/cli": "7.2.1",
     "@commitlint/config-conventional": "7.1.2",
