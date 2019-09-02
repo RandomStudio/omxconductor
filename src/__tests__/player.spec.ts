@@ -5,8 +5,13 @@ jest.mock('../environment.ts', () => ({
 
 import { Player } from '../player'
 
-describe(`Player`, () => {
-  const player = new Player({})
+describe(`Player defaults`, () => {
+  let player: Player
+
+  beforeEach(() => {
+    player = new Player({})
+  })
+
   it('should return an object', () => {
     expect(typeof player).toBe('object')
   })
@@ -16,22 +21,7 @@ describe(`Player`, () => {
   it('should get default dBUS ID if none specified', () => {
     expect(player.getSettings().dBusId).toBe('org.mpris.MediaPlayer2.omxplayer')
   })
-  // let greeter: Greeter
-  // beforeEach(() => {
-  //   greeter = new Greeter('World')
-  // })
-  // it(`should greet`, () => {
-  //   const actual = greeter.greet()
-  //   const expected = 'Hello, World!'
-  //   expect(actual).toBe(expected)
-  // })
-  // it(`should greet and print deprecation message if in dev mode`, () => {
-  //   const spyWarn = jest.spyOn(console, 'warn')
-  //   const actual = greeter.greetMe()
-  //   const expected = 'Hello, World!'
-  //   expect(actual).toBe(expected)
-  //   expect(spyWarn).toHaveBeenCalledWith(
-  //     'this method is deprecated, use #greet instead'
-  //   )
-  // })
+  it('should get default audio output option', () => {
+    expect(player.getSettings().audioOutput === 'both')
+  })
 })
