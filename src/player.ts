@@ -1,14 +1,13 @@
 // import { IS_DEV } from './environment'
+import * as defaults from './defaults'
 interface PlayerOptions {
   layer: number | null
   dBusId: string
 }
 
-const DBUS_DEST_DEFAULT = 'org.mpris.MediaPlayer2.omxplayer'
-
 export class Player {
   private settings: PlayerOptions
-  constructor({ layer = 1, dBusId = DBUS_DEST_DEFAULT }) {
+  constructor({ layer = 1, dBusId = defaults.DBUS_DEST_DEFAULT }) {
     this.settings = {
       layer,
       dBusId,
