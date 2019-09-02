@@ -3,13 +3,13 @@ jest.mock('../environment.ts', () => ({
   IS_PROD: false,
 }))
 
-import { Player } from '../player'
+import { AudioOutput, Player } from '../player'
 
 describe(`Player defaults`, () => {
   let player: Player
 
   beforeEach(() => {
-    player = new Player({})
+    player = new Player('dummy.mp4')
   })
 
   it('should return an object', () => {
@@ -22,6 +22,46 @@ describe(`Player defaults`, () => {
     expect(player.getSettings().dBusId).toBe('org.mpris.MediaPlayer2.omxplayer')
   })
   it('should get default audio output option', () => {
-    expect(player.getSettings().audioOutput === 'both')
+    expect(player.getSettings().audioOutput).toBe('both')
   })
+  it('should have a black background if none specified', () => {
+    // tslint:disable-next-line:no-magic-numbers
+    expect(player.getSettings().backgroundColor).toBe(0xff000000)
+  })
+  it('should have no background if explicitly disabled', () => {
+    player = new Player('dummy.mp4', { noBackgroundColor: true })
+    expect(player.getSettings().noBackgroundColor).toBe(true)
+  })
+  it('should have a different audio output if specified', () => {
+    player = new Player('dummy.mp4', { audioOutput: AudioOutput.hdmi })
+    expect(player.getSettings().audioOutput).toBe('hdmi')
+  })
+})
+
+describe('Player open()', () => {
+  let player: Player
+
+  // tslint:disable:no-any no-unsafe-any
+  it('should return an error when file not found', () => {
+    player = new Player('dummy.mp4')
+    player.open().catch((err: any) => {
+      expect(err.err).toBeDefined()
+    })
+  })
+
+  it('should proceed without error if file exists', () => {
+    player = new Player('./demo/media/tenseconds.mp4')
+    player
+      .open()
+      .then((result: any) => {
+        expect(result.playing).toBe(true)
+        expect(result.filePath.split('/')).toContain('tenseconds.mp4')
+      })
+      .catch((err: any) => {
+        // tslint:disable-next-line:no-console
+        console.error(err)
+      })
+  })
+
+  // tslint:enable
 })
