@@ -1,6 +1,6 @@
-import { AudioOutput, PlayerOptions } from './player'
+import { AudioOutput, PlayerSettings } from './player'
 
-export const defaultOptions: PlayerOptions = {
+export const defaultOptions: PlayerSettings = {
   layer: 1,
   dBusId: 'org.mpris.MediaPlayer2.omxplayer',
   audioOutput: 'both' as AudioOutput,

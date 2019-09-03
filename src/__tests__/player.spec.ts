@@ -45,6 +45,8 @@ describe('Player open()', () => {
   it('should return an error when file not found', () => {
     player = new Player('dummy.mp4')
     player.open().catch((err: any) => {
+      // tslint:disable-next-line:no-console
+      // console.error('ignore this error:', err);
       expect(err.err).toBeDefined()
     })
   })
@@ -56,6 +58,21 @@ describe('Player open()', () => {
       .then((result: any) => {
         expect(result.playing).toBe(true)
         expect(result.filePath.split('/')).toContain('tenseconds.mp4')
+      })
+      .catch((err: any) => {
+        // tslint:disable-next-line:no-console
+        console.error(err)
+      })
+  })
+
+  it('should resolve with a valid omxplayer command', () => {
+    player = new Player('./demo/media/tenseconds.mp4')
+    player
+      .open()
+      .then((result: any) => {
+        expect(result.command).toBe(
+          'omxplayer "/home/pi/omx-conductor/demo/media/tenseconds.mp4" -o both -b4278190080 --dbus-name org.mpris.MediaPlayer2.omxplayer --loop --layer 1 < omxpipe1'
+        )
       })
       .catch((err: any) => {
         // tslint:disable-next-line:no-console

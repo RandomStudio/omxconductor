@@ -1,0 +1,3 @@
+diff a/src/player.ts b/src/player.ts	(rejected hunks)
+@@ -4 +3,0 @@ import { defaultOptions } from './defaults'
+-import { IS_DEV } from './environment'
