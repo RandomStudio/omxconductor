@@ -1,6 +1,8 @@
+// tslint:disable:ordered-imports
 import fs from 'fs'
 import path from 'path'
 import { defaultOptions } from './defaults'
+import { exec } from 'child_process'
 
 export enum AudioOutput {
   hdmi = 'hdmi',
@@ -24,6 +26,7 @@ export interface PlayerSettings {
   backgroundColor: number
   noBackgroundColor: boolean
   loop: boolean
+  testModeOnly: boolean
 }
 
 export class Player {
@@ -37,6 +40,10 @@ export class Player {
 
   getSettings = () => {
     return this.settings
+  }
+
+  enableTestMode = () => {
+    this.settings.testModeOnly = true
   }
 
   open = (waitOnBlack = false) =>
@@ -62,7 +69,17 @@ export class Player {
       const command = `omxplayer ${settingsToArgs(file, this.settings).join(
         ' '
       )} < omxpipe${this.settings.layer}`
-      resolve(command)
+      if (this.settings.testModeOnly) {
+        resolve({ command, testModeOnly: true })
+      } else {
+        exec(command, (err, stdout, stderr) => {
+          if (err) {
+            reject({ err, command })
+          } else {
+            resolve({ command, stdout, testModeOnly: false })
+          }
+        })
+      }
     })
 }
 
@@ -71,7 +88,7 @@ const settingsToArgs = (file: string, settings: PlayerSettings): string[] => [
   '-o',
   settings.audioOutput,
   settings.noBackgroundColor ? '' : `-b${settings.backgroundColor}`,
-  '--dbus-name',
+  '--dbus_name',
   settings.dBusId,
   settings.loop ? '--loop' : '',
   '--layer',

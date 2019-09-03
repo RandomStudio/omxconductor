@@ -49,7 +49,8 @@
     "release:github": "git push --no-verify --follow-tags origin master",
     "release:npm": "npm publish dist",
     "release:preflight": "npm pack ./dist --dry-run",
-    "size": "node scripts/file-size ./dist/bundles/index.umd.min.js ./dist/bundles/index.esm.min.js"
+    "size": "node scripts/file-size ./dist/bundles/index.umd.min.js ./dist/bundles/index.esm.min.js",
+    "quickbuild": "tsc && tsc --target es2018 --outDir dist/esm2015 && rollup -c config/rollup.config.js && rollup -c config/rollup.config.js --environment NODE_ENV:production"
   },
   "config": {
     "commitizen": {

@@ -7,4 +7,5 @@ export const defaultOptions: PlayerSettings = {
   backgroundColor: 0xff000000,
   noBackgroundColor: false,
   loop: true,
+  testModeOnly: false,
 }

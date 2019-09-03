@@ -41,6 +41,11 @@ describe(`Player defaults`, () => {
 describe('Player open()', () => {
   let player: Player
 
+  beforeEach(() => {
+    player = new Player('./demo/media/tenseconds.mp4')
+    player.enableTestMode()
+  })
+
   // tslint:disable:no-any no-unsafe-any
   it('should return an error when file not found', () => {
     player = new Player('dummy.mp4')
@@ -52,7 +57,6 @@ describe('Player open()', () => {
   })
 
   it('should proceed without error if file exists', () => {
-    player = new Player('./demo/media/tenseconds.mp4')
     player
       .open()
       .then((result: any) => {
@@ -66,13 +70,14 @@ describe('Player open()', () => {
   })
 
   it('should resolve with a valid omxplayer command', () => {
-    player = new Player('./demo/media/tenseconds.mp4')
     player
       .open()
       .then((result: any) => {
-        expect(result.command).toBe(
-          'omxplayer "/home/pi/omx-conductor/demo/media/tenseconds.mp4" -o both -b4278190080 --dbus-name org.mpris.MediaPlayer2.omxplayer --loop --layer 1 < omxpipe1'
-        )
+        expect(result.command).toEqual({
+          command:
+            'omxplayer "/home/pi/omx-conductor/demo/media/tenseconds.mp4" -o both -b4278190080 --dbus-name org.mpris.MediaPlayer2.omxplayer --loop --layer 1 < omxpipe1',
+          testModeOnly: true,
+        })
       })
       .catch((err: any) => {
         // tslint:disable-next-line:no-console

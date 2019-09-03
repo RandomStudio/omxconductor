@@ -1,8 +1,13 @@
 const { Player } = require('omxconductor')
 
-const player = new Player('dummy.mp4')
+const player = new Player('media/tenseconds.mp4')
 console.log('omx config:\n', player.getSettings())
 
-player.open().then((result) => {
-  console('open result:', result)
-})
+player
+  .open()
+  .then((result) => {
+    console.log('open result:', result)
+  })
+  .catch((err) => {
+    console.error('error on open:', err)
+  })
