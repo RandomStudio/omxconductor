@@ -1,6 +1,6 @@
 const { Player } = require('omxconductor')
 
-const player = new Player('media/tenseconds.mp4')
+const player = new Player('media/tenseconds.mp4', { loop: false })
 console.log('omx config:\n', player.getSettings())
 
 player

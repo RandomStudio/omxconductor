@@ -72,12 +72,20 @@ export class Player {
       if (this.settings.testModeOnly) {
         resolve({ command, testModeOnly: true })
       } else {
-        exec(command, (err, stdout, stderr) => {
-          if (err) {
-            reject({ err, command })
-          } else {
-            resolve({ command, stdout, testModeOnly: false })
-          }
+        exec(`mkfifo omxpipe${this.settings.layer}`, () => {
+          // ignore errors, e.g. already exists
+          exec(command, (err, stdout, stderr) => {
+            // this block only executes when pipe is closed!
+            // tslint:disable-next-line:no-console
+            console.log('pipe closed', { err, stdout, stderr })
+          })
+          exec(`. > omxpipe${this.settings.layer}`, (err, stdout, stderr) => {
+            if (err) {
+              reject({ err, command })
+            } else {
+              resolve({ command, stdout, stderr, testModeOnly: false })
+            }
+          })
         })
       }
     })
