@@ -3,6 +3,7 @@ import fs from 'fs'
 import path from 'path'
 import { defaultOptions } from './defaults'
 import { exec } from 'child_process'
+import { EventEmitter } from 'events'
 
 export enum AudioOutput {
   hdmi = 'hdmi',
@@ -14,7 +15,7 @@ export interface PlayerOptions {
   layer?: number
   dBusId?: string
   audioOutput?: AudioOutput
-  backgroundColor?: number
+  backgroundColor?: string
   noBackgroundColor?: boolean
   loop?: boolean
 }
@@ -23,17 +24,18 @@ export interface PlayerSettings {
   layer: number
   dBusId: string
   audioOutput: AudioOutput
-  backgroundColor: number
+  backgroundColor: string
   noBackgroundColor: boolean
   loop: boolean
   testModeOnly: boolean
 }
 
-export class Player {
+export class Player extends EventEmitter {
   private file: string
   private settings: PlayerSettings
 
   constructor(file: string, options?: PlayerOptions) {
+    super()
     this.file = file
     this.settings = { ...defaultOptions, ...(options as PlayerSettings) }
   }
@@ -55,6 +57,7 @@ export class Player {
         } else {
           this.startOmxInstance(filePath)
             .then((command) => {
+              this.emit('open', { filePath, command, playing: !waitOnBlack })
               resolve({ filePath, command, playing: !waitOnBlack })
             })
             .catch((startError) => {
@@ -102,3 +105,6 @@ const settingsToArgs = (file: string, settings: PlayerSettings): string[] => [
   '--layer',
   settings.layer.toString(),
 ]
+
+// const dbusCommand = (command: string, dbusId: string) =>
+//   `bash ${__dirname}/dbus.sh ${dbusId} ${command}`

@@ -11,3 +11,7 @@ player
   .catch((err) => {
     console.error('error on open:', err)
   })
+
+player.on('open', (result) => {
+  console.log('open event:', result)
+})

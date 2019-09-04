@@ -26,7 +26,7 @@ describe(`Player defaults`, () => {
   })
   it('should have a black background if none specified', () => {
     // tslint:disable-next-line:no-magic-numbers
-    expect(player.getSettings().backgroundColor).toBe(0xff000000)
+    expect(player.getSettings().backgroundColor).toBe('0xff000000')
   })
   it('should have no background if explicitly disabled', () => {
     player = new Player('dummy.mp4', { noBackgroundColor: true })
@@ -75,7 +75,7 @@ describe('Player open()', () => {
       .then((result: any) => {
         expect(result.command).toEqual({
           command:
-            'omxplayer "/home/pi/omx-conductor/demo/media/tenseconds.mp4" -o both -b4278190080 --dbus-name org.mpris.MediaPlayer2.omxplayer --loop --layer 1 < omxpipe1',
+            'omxplayer "/home/pi/omx-conductor/demo/media/tenseconds.mp4" -o both -b0xff000000 --dbus_name org.mpris.MediaPlayer2.omxplayer --loop --layer 1 < omxpipe1',
           testModeOnly: true,
         })
       })
