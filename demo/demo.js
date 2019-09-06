@@ -18,6 +18,9 @@ player.on('open', (result) => {
 
 player.on('ready', (result) => {
   console.log('ready event:', result)
+  player.on('progress', (progress) => {
+    console.log('progress event:', progress)
+  })
 })
 
 player.on('error', (err) => {

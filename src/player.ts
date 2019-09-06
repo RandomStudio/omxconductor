@@ -38,6 +38,7 @@ export interface PlayerSettings {
   noBackgroundColor: boolean
   loop: boolean
   testModeOnly: boolean
+  progressInterval: number
 }
 
 export class Player extends EventEmitter {
@@ -87,7 +88,10 @@ export class Player extends EventEmitter {
             .then((command) => {
               this.emit('open', { filePath, command, playing: !waitOnBlack })
               this.waitForControl()
-                .then((result) => this.emit('ready', result))
+                .then((result) => {
+                  this.emit('ready', result)
+                  this.scheduleProgressCheck()
+                })
                 .catch((waitErr) => this.emit('error', waitErr))
               resolve({ filePath, command, playing: !waitOnBlack })
             })
@@ -122,7 +126,29 @@ export class Player extends EventEmitter {
         })
       }
     })
-}
+
+  private scheduleProgressCheck = () => {
+    setInterval(() => {
+      let position: number
+      let duration: number
+      getFloat(this.settings.dBusId, 'Position')
+        .then((value) => {
+          position = value
+
+          return getFloat(this.settings.dBusId, 'Duration')
+        })
+        .then((value) => {
+          duration = value
+          this.emit('progress', {
+            position,
+            duration,
+            progress: position / duration,
+          })
+        })
+        .catch((err) => this.emit('error', err))
+    }, this.settings.progressInterval)
+  }
+} // --------- Class end ---------------------------------------------
 
 const settingsToArgs = (file: string, settings: PlayerSettings): string[] => [
   `"${file}"`,
@@ -176,12 +202,18 @@ const dBusVars = () =>
       .catch((err) => reject(err))
   })
 
+const dbusCommand = (dbusId: string) =>
+  `dbus-send --print-reply=literal --session --reply-timeout=${CONTROL_CHECK_INTERVAL_MS} --dest=${dbusId} /org/mpris/MediaPlayer2`
+
 const getPlayStatus = (dbusId: string) =>
   new Promise<PlayStatus>((resolve, reject) => {
     dBusVars()
       .then((vars) => {
-        const command = `${vars} dbus-send --print-reply=literal --session --reply-timeout=${CONTROL_CHECK_INTERVAL_MS} --dest=${dbusId} /org/mpris/MediaPlayer2 org.freedesktop.DBus.Properties.PlaybackStatus`
-        execPromise(command)
+        execPromise(
+          `${vars} ${dbusCommand(
+            dbusId
+          )} org.freedesktop.DBus.Properties.PlaybackStatus`
+        )
           .then((result) =>
             resolve(
               result.stdout.trim() === 'Playing'
@@ -189,6 +221,29 @@ const getPlayStatus = (dbusId: string) =>
                 : PlayStatus.paused
             )
           )
+          .catch((err) => reject(err))
+      })
+      .catch((err) => reject(err))
+  })
+
+const cleanDbusNumber = (res: string): number =>
+  Number(
+    res
+      .trim()
+      .replace('\n', '')
+      .split(' ')[1]
+  )
+
+const getFloat = (dbusId: string, property: string) =>
+  new Promise<number>((resolve, reject) => {
+    dBusVars()
+      .then((vars) => {
+        execPromise(
+          `${vars} ${dbusCommand(
+            dbusId
+          )} org.freedesktop.DBus.Properties.${property}`
+        )
+          .then((result) => resolve(cleanDbusNumber(result.stdout)))
           .catch((err) => reject(err))
       })
       .catch((err) => reject(err))
