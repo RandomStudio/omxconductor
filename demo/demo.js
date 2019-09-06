@@ -20,6 +20,10 @@ player.on('ready', (result) => {
   console.log('ready event:', result)
   player.on('progress', (progress) => {
     console.log('progress event:', progress)
+    if (progress.progress >= 0.8) {
+      console.log('seek back to zero...')
+      player.seekAbsolute(0)
+    }
   })
 })
 

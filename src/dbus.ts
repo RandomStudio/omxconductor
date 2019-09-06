@@ -15,7 +15,7 @@ interface ExecResult {
 
 // TODO: this should be memoized...
 export const dBusVars = () =>
-  new Promise((resolve, reject) => {
+  new Promise<string>((resolve, reject) => {
     const USER = userInfo().username
 
     const OMXPLAYER_DBUS_ADDR = `/tmp/omxplayerdbus.${USER}`
@@ -38,17 +38,17 @@ export const dBusVars = () =>
       .catch((err) => reject(err))
   })
 
-const dbusProperty = (dbusId: string, property: string) =>
+const dBusProperty = (dbusId: string, property: string) =>
   `dbus-send --print-reply=literal --session --reply-timeout=${CONTROL_CHECK_INTERVAL_MS} --dest=${dbusId} /org/mpris/MediaPlayer2 org.freedesktop.DBus.Properties.${property}`
 
-// const dbusMethod = (dbusId: string,) =>
-//   `dbus-send --print-reply=literal --session --dest=${dbusId} /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player.SetPosition`
+const dBusMethod = (dbusId: string, method: string) =>
+  `dbus-send --print-reply=literal --session --dest=${dbusId} /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player.${method}`
 
 export const getPlayStatus = (dbusId: string) =>
   new Promise<PlayStatus>((resolve, reject) => {
     dBusVars()
       .then((vars) => {
-        execPromise(`${vars} ${dbusProperty(dbusId, 'PlaybackStatus')}`)
+        execPromise(`${vars} ${dBusProperty(dbusId, 'PlaybackStatus')}`)
           .then((result) =>
             resolve(
               result.stdout.trim() === 'Playing'
@@ -73,17 +73,30 @@ export const getFloat = (dbusId: string, property: string) =>
   new Promise<number>((resolve, reject) => {
     dBusVars()
       .then((vars) => {
-        execPromise(`${vars} ${dbusProperty(dbusId, property)}`)
+        execPromise(`${vars} ${dBusProperty(dbusId, property)}`)
           .then((result) => resolve(cleanDbusNumber(result.stdout)))
           .catch((err) => reject(err))
       })
       .catch((err) => reject(err))
   })
 
-// const setPosition = (dbusId: string, positionMs: number) =>
-//   new Promise<void>((resolve, reject) => {
+const millToMicro = 1000
 
-//   })
+export const setPosition = (dbusId: string, positionMs: number) =>
+  new Promise((resolve, reject) => {
+    dBusVars()
+      .then((vars) => {
+        execPromise(
+          `${vars} ${dBusMethod(
+            dbusId,
+            'SetPosition'
+          )} objpath:/not/used int64:${positionMs / millToMicro} >/dev/null`
+        )
+          .then((result) => resolve(result))
+          .catch((err) => reject(err))
+      })
+      .catch((err) => reject(err))
+  })
 
 const execPromise = (command: string) =>
   new Promise<ExecResult>((resolve, reject) => {

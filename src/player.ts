@@ -9,7 +9,7 @@ import {
 import { exec } from 'child_process'
 import { EventEmitter } from 'events'
 
-import { getFloat, getPlayStatus } from './dbus'
+import { getFloat, getPlayStatus, setPosition } from './dbus'
 
 export enum AudioOutput {
   hdmi = 'hdmi',
@@ -97,6 +97,16 @@ export class Player extends EventEmitter {
         }
       })
     })
+
+  seekAbsolute = (positionMs: number, callback?: () => void) => {
+    setPosition(this.settings.dBusId, positionMs)
+      .then(() => {
+        if (callback) {
+          callback()
+        }
+      })
+      .catch((err) => this.emit('error', err))
+  }
 
   private startOmxInstance = (file: string) =>
     new Promise((resolve, reject) => {
