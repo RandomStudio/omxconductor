@@ -80,7 +80,7 @@ export const getFloat = (dbusId: string, property: string) =>
       .catch((err) => reject(err))
   })
 
-const millToMicro = 1000
+export const millToMicro = 1000
 
 export const setPosition = (dbusId: string, positionMs: number) =>
   new Promise((resolve, reject) => {

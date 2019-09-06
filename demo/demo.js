@@ -7,6 +7,11 @@ player
   .open()
   .then((result) => {
     console.log('open result:', result)
+
+    // this could be done here or on 'open' event
+    player.registerPositionTrigger(6000, (actualPosition) => {
+      console.log('hit 6000ms trigger @', actualPosition)
+    })
   })
   .catch((err) => {
     console.error('error on open:', err)
@@ -18,13 +23,15 @@ player.on('open', (result) => {
 
 player.on('ready', (result) => {
   console.log('ready event:', result)
-  player.on('progress', (progress) => {
-    console.log('progress event:', progress)
-    if (progress.progress >= 0.8) {
-      console.log('seek back to zero...')
-      player.seekAbsolute(0)
-    }
-  })
+
+  // EXAMPLE A: TRIGGER ON PROGRESS UPDATES YOURSELF
+  // player.on('progress', (progress) => {
+  //   console.log('progress event:', progress)
+  //   if (progress.progress >= 0.8) {
+  //     console.log('seek back to zero...')
+  //     player.seekAbsolute(0)
+  //   }
+  // })
 })
 
 player.on('error', (err) => {

@@ -5,11 +5,12 @@ import {
   defaultOptions,
   CONTROL_CHECK_INTERVAL_MS,
   CONTROL_CHECK_MAX_ATTEMPTS,
+  CHECK_MISS_RATIO,
 } from './defaults'
 import { exec } from 'child_process'
 import { EventEmitter } from 'events'
 
-import { getFloat, getPlayStatus, setPosition } from './dbus'
+import { getFloat, getPlayStatus, setPosition, millToMicro } from './dbus'
 
 export enum AudioOutput {
   hdmi = 'hdmi',
@@ -37,14 +38,21 @@ export interface PlayerSettings {
   progressInterval: number
 }
 
+interface Trigger {
+  positionMs: number
+  handler: (triggeredPositionMs: number) => void
+}
+
 export class Player extends EventEmitter {
   private file: string
   private settings: PlayerSettings
+  private positionTriggers: Trigger[]
 
   constructor(file: string, options?: PlayerOptions) {
     super()
     this.file = file
     this.settings = { ...defaultOptions, ...(options as PlayerSettings) }
+    this.positionTriggers = []
   }
 
   getSettings = () => {
@@ -108,6 +116,16 @@ export class Player extends EventEmitter {
       .catch((err) => this.emit('error', err))
   }
 
+  registerPositionTrigger = (
+    positionMs: number,
+    handler: (triggeredPositionMs: number) => void
+  ) => {
+    this.positionTriggers.push({
+      positionMs,
+      handler,
+    })
+  }
+
   private startOmxInstance = (file: string) =>
     new Promise((resolve, reject) => {
       const command = `omxplayer ${settingsToArgs(file, this.settings).join(
@@ -145,6 +163,18 @@ export class Player extends EventEmitter {
         })
         .then((value) => {
           duration = value
+          if (this.positionTriggers.length > 0) {
+            this.positionTriggers.forEach((trigger) => {
+              if (
+                position / millToMicro >= trigger.positionMs &&
+                position / millToMicro <
+                  trigger.positionMs +
+                    this.settings.progressInterval * CHECK_MISS_RATIO
+              ) {
+                trigger.handler(position / millToMicro)
+              }
+            })
+          }
           this.emit('progress', {
             position,
             duration,

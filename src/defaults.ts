@@ -8,8 +8,9 @@ export const defaultOptions: PlayerSettings = {
   noBackgroundColor: false,
   loop: true,
   testModeOnly: false,
-  progressInterval: 1000,
+  progressInterval: 16,
 }
 
 export const CONTROL_CHECK_INTERVAL_MS = 500
 export const CONTROL_CHECK_MAX_ATTEMPTS = 10
+export const CHECK_MISS_RATIO = 2
