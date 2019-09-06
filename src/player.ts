@@ -16,6 +16,11 @@ export enum AudioOutput {
   both = 'both',
 }
 
+enum PlayStatus {
+  playing = 'Playing',
+  paused = 'Paused',
+}
+
 export interface PlayerOptions {
   layer?: number
   dBusId?: string
@@ -172,12 +177,18 @@ const dBusVars = () =>
   })
 
 const getPlayStatus = (dbusId: string) =>
-  new Promise((resolve, reject) => {
+  new Promise<PlayStatus>((resolve, reject) => {
     dBusVars()
       .then((vars) => {
         const command = `${vars} dbus-send --print-reply=literal --session --reply-timeout=${CONTROL_CHECK_INTERVAL_MS} --dest=${dbusId} /org/mpris/MediaPlayer2 org.freedesktop.DBus.Properties.PlaybackStatus`
         execPromise(command)
-          .then((result) => resolve(result.stdout.trim()))
+          .then((result) =>
+            resolve(
+              result.stdout.trim() === 'Playing'
+                ? PlayStatus.playing
+                : PlayStatus.paused
+            )
+          )
           .catch((err) => reject(err))
       })
       .catch((err) => reject(err))
