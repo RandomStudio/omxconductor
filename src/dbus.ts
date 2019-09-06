@@ -13,6 +13,7 @@ interface ExecResult {
   stderr: string
 }
 
+// TODO: this should be memoized...
 export const dBusVars = () =>
   new Promise((resolve, reject) => {
     const USER = userInfo().username
@@ -37,18 +38,17 @@ export const dBusVars = () =>
       .catch((err) => reject(err))
   })
 
-const dbusCommand = (dbusId: string) =>
-  `dbus-send --print-reply=literal --session --reply-timeout=${CONTROL_CHECK_INTERVAL_MS} --dest=${dbusId} /org/mpris/MediaPlayer2`
+const dbusProperty = (dbusId: string, property: string) =>
+  `dbus-send --print-reply=literal --session --reply-timeout=${CONTROL_CHECK_INTERVAL_MS} --dest=${dbusId} /org/mpris/MediaPlayer2 org.freedesktop.DBus.Properties.${property}`
+
+// const dbusMethod = (dbusId: string,) =>
+//   `dbus-send --print-reply=literal --session --dest=${dbusId} /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player.SetPosition`
 
 export const getPlayStatus = (dbusId: string) =>
   new Promise<PlayStatus>((resolve, reject) => {
     dBusVars()
       .then((vars) => {
-        execPromise(
-          `${vars} ${dbusCommand(
-            dbusId
-          )} org.freedesktop.DBus.Properties.PlaybackStatus`
-        )
+        execPromise(`${vars} ${dbusProperty(dbusId, 'PlaybackStatus')}`)
           .then((result) =>
             resolve(
               result.stdout.trim() === 'Playing'
@@ -73,16 +73,17 @@ export const getFloat = (dbusId: string, property: string) =>
   new Promise<number>((resolve, reject) => {
     dBusVars()
       .then((vars) => {
-        execPromise(
-          `${vars} ${dbusCommand(
-            dbusId
-          )} org.freedesktop.DBus.Properties.${property}`
-        )
+        execPromise(`${vars} ${dbusProperty(dbusId, property)}`)
           .then((result) => resolve(cleanDbusNumber(result.stdout)))
           .catch((err) => reject(err))
       })
       .catch((err) => reject(err))
   })
+
+// const setPosition = (dbusId: string, positionMs: number) =>
+//   new Promise<void>((resolve, reject) => {
+
+//   })
 
 const execPromise = (command: string) =>
   new Promise<ExecResult>((resolve, reject) => {
