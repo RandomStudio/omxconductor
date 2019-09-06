@@ -9,3 +9,6 @@ export const defaultOptions: PlayerSettings = {
   loop: true,
   testModeOnly: false,
 }
+
+export const CONTROL_CHECK_INTERVAL_MS = 500
+export const CONTROL_CHECK_MAX_ATTEMPTS = 10

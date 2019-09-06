@@ -1,6 +1,6 @@
 const { Player } = require('omxconductor')
 
-const player = new Player('media/tenseconds.mp4', { loop: false })
+const player = new Player('media/tenseconds.mp4', { loop: true })
 console.log('omx config:\n', player.getSettings())
 
 player
@@ -14,4 +14,18 @@ player
 
 player.on('open', (result) => {
   console.log('open event:', result)
+})
+
+player.on('ready', (result) => {
+  console.log('ready event:', result)
+})
+
+player.on('error', (err) => {
+  console.error('error event:', err)
+  // process.exit(1)
+})
+
+player.on('close', (result) => {
+  console.log('pipe closed event:', result)
+  process.exit(0)
 })

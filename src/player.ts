@@ -1,9 +1,14 @@
 // tslint:disable:ordered-imports
 import fs from 'fs'
 import path from 'path'
-import { defaultOptions } from './defaults'
+import {
+  defaultOptions,
+  CONTROL_CHECK_INTERVAL_MS,
+  CONTROL_CHECK_MAX_ATTEMPTS,
+} from './defaults'
 import { exec } from 'child_process'
 import { EventEmitter } from 'events'
+import { userInfo } from 'os'
 
 export enum AudioOutput {
   hdmi = 'hdmi',
@@ -48,6 +53,24 @@ export class Player extends EventEmitter {
     this.settings.testModeOnly = true
   }
 
+  waitForControl = () =>
+    new Promise((resolve, reject) => {
+      let attempts = 0
+      const interval = setInterval(() => {
+        attempts++
+        getPlayStatus(this.settings.dBusId)
+          .then((result) => {
+            clearInterval(interval)
+            resolve({ result, attempts })
+          })
+          .catch((err) => {
+            if (attempts > CONTROL_CHECK_MAX_ATTEMPTS) {
+              reject({ err, attempts })
+            } // else ignore and try again
+          })
+      }, CONTROL_CHECK_INTERVAL_MS)
+    })
+
   open = (waitOnBlack = false) =>
     new Promise((resolve, reject) => {
       const filePath = path.resolve(this.file)
@@ -58,6 +81,9 @@ export class Player extends EventEmitter {
           this.startOmxInstance(filePath)
             .then((command) => {
               this.emit('open', { filePath, command, playing: !waitOnBlack })
+              this.waitForControl()
+                .then((result) => this.emit('ready', result))
+                .catch((waitErr) => this.emit('error', waitErr))
               resolve({ filePath, command, playing: !waitOnBlack })
             })
             .catch((startError) => {
@@ -79,8 +105,7 @@ export class Player extends EventEmitter {
           // ignore errors, e.g. already exists
           exec(command, (err, stdout, stderr) => {
             // this block only executes when pipe is closed!
-            // tslint:disable-next-line:no-console
-            console.log('pipe closed', { err, stdout, stderr })
+            this.emit('close', { err, stdout, stderr })
           })
           exec(`. > omxpipe${this.settings.layer}`, (err, stdout, stderr) => {
             if (err) {
@@ -106,5 +131,54 @@ const settingsToArgs = (file: string, settings: PlayerSettings): string[] => [
   settings.layer.toString(),
 ]
 
-// const dbusCommand = (command: string, dbusId: string) =>
-//   `bash ${__dirname}/dbus.sh ${dbusId} ${command}`
+interface ExecResult {
+  stdout: string
+  stderr: string
+}
+
+const execPromise = (command: string) =>
+  new Promise<ExecResult>((resolve, reject) => {
+    exec(command, (err, stdout, stderr) => {
+      if (err) {
+        reject(err)
+      } else {
+        resolve({ stdout, stderr })
+      }
+    })
+  })
+
+const dBusVars = () =>
+  new Promise((resolve, reject) => {
+    const USER = userInfo().username
+
+    const OMXPLAYER_DBUS_ADDR = `/tmp/omxplayerdbus.${USER}`
+    const OMXPLAYER_DBUS_PID = `/tmp/omxplayerdbus.${USER}.pid`
+
+    execPromise(`cat ${OMXPLAYER_DBUS_ADDR}`)
+      .then((resultAddr: ExecResult) => {
+        const address = resultAddr.stdout
+        execPromise(`cat ${OMXPLAYER_DBUS_PID}`)
+          .then((resultPid: ExecResult) => {
+            const pid = resultPid.stdout
+            resolve(
+              `DBUS_SESSION_BUS_ADDRESS=${address} DBUS_SESSION_BUS_PID=${pid}`
+                .trim()
+                .replace('\n', ' ')
+            )
+          })
+          .catch((err) => reject(err))
+      })
+      .catch((err) => reject(err))
+  })
+
+const getPlayStatus = (dbusId: string) =>
+  new Promise((resolve, reject) => {
+    dBusVars()
+      .then((vars) => {
+        const command = `${vars} dbus-send --print-reply=literal --session --reply-timeout=${CONTROL_CHECK_INTERVAL_MS} --dest=${dbusId} /org/mpris/MediaPlayer2 org.freedesktop.DBus.Properties.PlaybackStatus`
+        execPromise(command)
+          .then((result) => resolve(result.stdout.trim()))
+          .catch((err) => reject(err))
+      })
+      .catch((err) => reject(err))
+  })
