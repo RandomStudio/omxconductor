@@ -10,7 +10,13 @@ import {
 import { exec } from 'child_process'
 import { EventEmitter } from 'events'
 
-import { getFloat, getPlayStatus, setPosition, millToMicro } from './dbus'
+import {
+  getFloat,
+  getPlayStatus,
+  setPosition,
+  millToMicro,
+  pause,
+} from './dbus'
 
 export enum AudioOutput {
   hdmi = 'hdmi',
@@ -113,6 +119,12 @@ export class Player extends EventEmitter {
           callback()
         }
       })
+      .catch((err) => this.emit('error', err))
+  }
+
+  pause = (callback?: () => void) => {
+    pause(this.settings.dBusId)
+      .then(() => this.emit('paused'))
       .catch((err) => this.emit('error', err))
   }
 

@@ -27,9 +27,9 @@ player.on('ready', (result) => {
   // EXAMPLE A: TRIGGER ON PROGRESS UPDATES YOURSELF
   // player.on('progress', (progress) => {
   //   console.log('progress event:', progress)
-  //   if (progress.progress >= 0.8) {
-  //     console.log('seek back to zero...')
-  //     player.seekAbsolute(0)
+  //   if (progress.progress >= 0.2) {
+  //     console.log('pause...')
+  //     player.pause()
   //   }
   // })
 })
