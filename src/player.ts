@@ -5,7 +5,6 @@ import {
   defaultOptions,
   CONTROL_CHECK_INTERVAL_MS,
   CONTROL_CHECK_MAX_ATTEMPTS,
-  CHECK_MISS_RATIO,
 } from './defaults'
 import { exec } from 'child_process'
 import { EventEmitter } from 'events'
@@ -47,6 +46,7 @@ export interface PlayerSettings {
 interface Trigger {
   positionMs: number
   handler: (triggeredPositionMs: number) => void
+  alreadyTrigged: boolean
 }
 
 export class Player extends EventEmitter {
@@ -135,6 +135,7 @@ export class Player extends EventEmitter {
     this.positionTriggers.push({
       positionMs,
       handler,
+      alreadyTrigged: false,
     })
   }
 
@@ -179,11 +180,10 @@ export class Player extends EventEmitter {
             this.positionTriggers.forEach((trigger) => {
               if (
                 position / millToMicro >= trigger.positionMs &&
-                position / millToMicro <
-                  trigger.positionMs +
-                    this.settings.progressInterval * CHECK_MISS_RATIO
+                !trigger.alreadyTrigged
               ) {
                 trigger.handler(position / millToMicro)
+                trigger.alreadyTrigged = true
               }
             })
           }
