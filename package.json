@@ -1,7 +1,7 @@
 {
   "name": "omxconductor",
   "version": "0.2.3",
-  "description": "Control omxplayer instances via NodeJS",
+  "description": "Orchestrate omxplayer instances via NodeJS",
   "keywords": [
     "raspberry",
     "pi",
