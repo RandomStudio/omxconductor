@@ -120,6 +120,17 @@ export const stop = (dbusId: string) =>
       .catch((err) => reject(err))
   })
 
+export const resume = (dbusId: string) =>
+  new Promise((resolve, reject) => {
+    dBusVars()
+      .then((vars) => {
+        execPromise(`${vars} ${dBusMethod(dbusId, 'Play')} >/dev/null`)
+          .then(() => resolve())
+          .catch((err) => reject(err))
+      })
+      .catch((err) => reject(err))
+  })
+
 const execPromise = (command: string) =>
   new Promise<ExecResult>((resolve, reject) => {
     exec(command, (err, stdout, stderr) => {

@@ -9,10 +9,16 @@ player
     console.log('open result:', result)
 
     // this could be done here or on 'open' event
-    player.registerPositionTrigger(6000, (actualPosition) => {
-      console.log('hit 6000ms trigger @', actualPosition)
+    player.registerPositionTrigger(5000, (actualPosition) => {
+      console.log('hit 5000ms trigger @', actualPosition)
       // player.seekAbsolute(0)
-      player.stop()
+      // player.stop()
+      player.pause(() => {
+        setTimeout(() => {
+          console.log('resume now!')
+          player.resume()
+        }, 4000)
+      })
     })
   })
   .catch((err) => {
@@ -20,11 +26,11 @@ player
   })
 
 player.on('open', (result) => {
-  console.log('open event:', result)
+  console.log('**************** open event:', result)
 })
 
 player.on('ready', (result) => {
-  console.log('ready event:', result)
+  console.log('**************** ready event:', result)
 
   // EXAMPLE A: TRIGGER ON PROGRESS UPDATES YOURSELF
   // player.on('progress', (progress) => {
@@ -37,16 +43,24 @@ player.on('ready', (result) => {
 })
 
 player.on('error', (err) => {
-  console.error('error event:', err)
+  console.error('**************** error event:', err)
   // process.exit(1)
 })
 
 player.on('stopped', () => {
-  console.log('stopped event')
+  console.log('**************** stopped event')
+})
+
+player.on('paused', () => {
+  console.log('**************** paused event')
+})
+
+player.on('resumed', () => {
+  console.log('**************** resumed event')
 })
 
 player.on('close', (result) => {
-  console.log('pipe closed event:', result)
+  console.log('**************** pipe closed event:', result)
   process.exit(0)
 })
 

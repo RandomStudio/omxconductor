@@ -53,6 +53,9 @@ The list of available events so far, and a description of their meaning:
 - `ready`: Emitted when omxconductor has successfully connected to the running omxplayer instance via [D-Bus](https://www.freedesktop.org/wiki/Software/dbus/). You should wait for this event before trying to do any live control of the video from your application. A `result` object includes some information including how many attempts it took before the instance was connected.
 - `progress`: Emitted repeatedly (by default, about 60 times per second!) as the clip plays. You get an object with the properties `position`, `duration` and `progress` which is simply `position / duration` (i.e. `0` is the beginning, `0.5` is halfway and `1.0` is the end).
 - `error`: Emitted on any kind of error in opening, playback, control commands, etc. An `error` object includes some (hopefully) useful information about what went wrong.
+- `stopped`: Emitted when playback was successfully stopped manually (i.e. by your client application). Expect to receive a `closed` event immediately after this, because stopping playback closes the omxplayer instance.
+- `paused`: Emitted when playback was successfully paused
+- `resumed`: Emitted when playback was successfully resumed (paused => playing)
 - `close`: Emitted when the omxplayer instance stops and/or the pipe closes. This could be good or bad, depending on the scenario. The `result` object returned includes the properties `err, stdout, stderr` which you can use to figure out what happened.
 
 ## Control the player while it's running
@@ -70,7 +73,9 @@ player.seekAbsolute(1000, () => {
 Here is a list of the available functions (so far); more coming soon...
 
 - `seekAbsolute = (positionMs: number, callback?: () => void)`: jump to the position in the clip (specified in milliseconds)
-- `pause = (callback?: () => void)`: pause playback
+- `pause = (callback?: () => void)`: pause playback (omxplayer instance is still running and progress will still be updated)
+- `resume = (callback?: () => void)`: resume playback if paused (has no effect if already playing)
+- `stop = (callback?: () => void)`: stop playback (omxplayer instance will actually quit, but no errors should be thrown)
 
 ### Registering triggers
 

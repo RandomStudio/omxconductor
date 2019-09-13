@@ -16,6 +16,7 @@ import {
   millToMicro,
   pause,
   stop,
+  resume,
 } from './dbus'
 
 export enum AudioOutput {
@@ -129,14 +130,35 @@ export class Player extends EventEmitter {
 
   pause = (callback?: () => void) => {
     pause(this.settings.dBusId)
-      .then(() => this.emit('paused'))
+      .then(() => {
+        if (callback) {
+          callback()
+        }
+        this.emit('paused')
+      })
       .catch((err) => this.emit('error', err))
   }
 
   stop = (callback?: () => void) => {
     this.stopProgressCheck()
     stop(this.settings.dBusId)
-      .then(() => this.emit('stopped'))
+      .then(() => {
+        if (callback) {
+          callback()
+        }
+        this.emit('stopped')
+      })
+      .catch((err) => this.emit('error', err))
+  }
+
+  resume = (callback?: () => void) => {
+    resume(this.settings.dBusId)
+      .then(() => {
+        if (callback) {
+          callback()
+        }
+        this.emit('resumed')
+      })
       .catch((err) => this.emit('error', err))
   }
 
