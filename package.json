@@ -15,7 +15,7 @@
   "sideEffects": false,
   "repository": {
     "type": "git",
-    "url": "https://github.com/RandomStudio/osc-simulator"
+    "url": "https://github.com/RandomStudio/omxconductor"
   },
   "author": "Stephen Buchanan <stephen.buchanan@random.studio>",
   "license": "MIT",
