@@ -15,6 +15,7 @@ import {
   setPosition,
   millToMicro,
   pause,
+  stop,
 } from './dbus'
 
 export enum AudioOutput {
@@ -53,12 +54,16 @@ export class Player extends EventEmitter {
   private file: string
   private settings: PlayerSettings
   private positionTriggers: Trigger[]
+  private disableProgressChecks: boolean
+  private progressCheckIntervalTimer: NodeJS.Timer | null
 
   constructor(file: string, options?: PlayerOptions) {
     super()
     this.file = file
     this.settings = { ...defaultOptions, ...(options as PlayerSettings) }
     this.positionTriggers = []
+    this.disableProgressChecks = false
+    this.progressCheckIntervalTimer = null
   }
 
   getSettings = () => {
@@ -128,6 +133,13 @@ export class Player extends EventEmitter {
       .catch((err) => this.emit('error', err))
   }
 
+  stop = (callback?: () => void) => {
+    this.stopProgressCheck()
+    stop(this.settings.dBusId)
+      .then(() => this.emit('stopped'))
+      .catch((err) => this.emit('error', err))
+  }
+
   registerPositionTrigger = (
     positionMs: number,
     handler: (triggeredPositionMs: number) => void
@@ -164,43 +176,62 @@ export class Player extends EventEmitter {
       }
     })
 
-  private scheduleProgressCheck = () => {
-    setInterval(() => {
-      let position: number
-      let duration: number
-      getFloat(this.settings.dBusId, 'Position')
-        .then((value) => {
-          position = value
+  private progressCheck = () => {
+    let position: number
+    let duration: number
+    if (this.disableProgressChecks) {
+      return
+    }
+    getFloat(this.settings.dBusId, 'Position')
+      .then((value) => {
+        position = value
 
-          return getFloat(this.settings.dBusId, 'Duration')
-        })
-        .then((value) => {
-          duration = value
-          if (this.positionTriggers.length > 0) {
-            this.positionTriggers.forEach((trigger) => {
-              if (
-                position / millToMicro >= trigger.positionMs &&
-                !trigger.alreadyTrigged
-              ) {
-                trigger.handler(position / millToMicro)
-                trigger.alreadyTrigged = true
-              }
-              if (
-                position / millToMicro < trigger.positionMs &&
-                trigger.alreadyTrigged
-              ) {
-                trigger.alreadyTrigged = false // reset
-              }
-            })
-          }
-          this.emit('progress', {
-            position,
-            duration,
-            progress: position / duration,
+        return getFloat(this.settings.dBusId, 'Duration')
+      })
+      .then((value) => {
+        duration = value
+        if (this.positionTriggers.length > 0) {
+          this.positionTriggers.forEach((trigger) => {
+            if (
+              position / millToMicro >= trigger.positionMs &&
+              !trigger.alreadyTrigged
+            ) {
+              trigger.handler(position / millToMicro)
+              trigger.alreadyTrigged = true
+            }
+            if (
+              position / millToMicro < trigger.positionMs &&
+              trigger.alreadyTrigged
+            ) {
+              trigger.alreadyTrigged = false // reset
+            }
           })
+        }
+        this.emit('progress', {
+          position,
+          duration,
+          progress: position / duration,
         })
-        .catch((err) => this.emit('error', err))
-    }, this.settings.progressInterval)
+      })
+      .catch((err) => {
+        if (!this.disableProgressChecks) {
+          this.emit('error', err)
+        }
+      })
+  }
+
+  private scheduleProgressCheck = () => {
+    this.progressCheckIntervalTimer = setInterval(
+      this.progressCheck,
+      this.settings.progressInterval
+    )
+  }
+
+  private stopProgressCheck = () => {
+    this.disableProgressChecks = true
+    if (this.progressCheckIntervalTimer !== null) {
+      clearInterval(this.progressCheckIntervalTimer)
+    }
   }
 } // --------- Class end ---------------------------------------------
 

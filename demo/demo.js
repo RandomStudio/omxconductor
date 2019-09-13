@@ -11,7 +11,8 @@ player
     // this could be done here or on 'open' event
     player.registerPositionTrigger(6000, (actualPosition) => {
       console.log('hit 6000ms trigger @', actualPosition)
-      player.seekAbsolute(0)
+      // player.seekAbsolute(0)
+      player.stop()
     })
   })
   .catch((err) => {
@@ -40,7 +41,15 @@ player.on('error', (err) => {
   // process.exit(1)
 })
 
+player.on('stopped', () => {
+  console.log('stopped event')
+})
+
 player.on('close', (result) => {
   console.log('pipe closed event:', result)
   process.exit(0)
 })
+
+// player.on('progress', (info) => {
+//   console.log('progress all good:', info)
+// })
