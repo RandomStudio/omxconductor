@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="0.2.2"></a>
+
+## [0.2.2](https://github.com/RandomStudio/osc-simulator/compare/v0.2.1...v0.2.2) (2019-09-13)
+
+### Bug Fixes
+
+- actually commit it ([2fd1c6b](https://github.com/RandomStudio/osc-simulator/commit/2fd1c6b))
+- correct GitHub URL ([2974146](https://github.com/RandomStudio/osc-simulator/commit/2974146))
+
 <a name="0.2.1"></a>
 
 ## [0.2.1](https://github.com/anselanza/omx-conductor/compare/v0.2.0...v0.2.1) (2019-09-13)
