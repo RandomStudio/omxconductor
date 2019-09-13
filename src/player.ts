@@ -185,6 +185,12 @@ export class Player extends EventEmitter {
                 trigger.handler(position / millToMicro)
                 trigger.alreadyTrigged = true
               }
+              if (
+                position / millToMicro < trigger.positionMs &&
+                trigger.alreadyTrigged
+              ) {
+                trigger.alreadyTrigged = false // reset
+              }
             })
           }
           this.emit('progress', {

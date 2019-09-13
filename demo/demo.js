@@ -11,6 +11,7 @@ player
     // this could be done here or on 'open' event
     player.registerPositionTrigger(6000, (actualPosition) => {
       console.log('hit 6000ms trigger @', actualPosition)
+      player.seekAbsolute(0)
     })
   })
   .catch((err) => {
