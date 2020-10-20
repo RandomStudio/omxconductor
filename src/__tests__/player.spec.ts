@@ -3,6 +3,7 @@ jest.mock('../environment.ts', () => ({
   IS_PROD: false,
 }))
 
+import path from 'path'
 import { AudioOutput, Player } from '../player'
 
 describe(`Player defaults`, () => {
@@ -73,9 +74,9 @@ describe('Player open()', () => {
     player
       .open()
       .then((result: any) => {
+        const basePath = path.resolve(__dirname, '../../demo/media')
         expect(result.command).toEqual({
-          command:
-            'omxplayer "/home/pi/omx-conductor/demo/media/tenseconds.mp4" -o both -b4278190080 --dbus-name org.mpris.MediaPlayer2.omxplayer --loop --layer 1 < omxpipe1',
+          command: `omxplayer "${basePath}/tenseconds.mp4" -o both -b4278190080 --dbus_name org.mpris.MediaPlayer2.omxplayer --loop --layer 1 < omxpipe1`,
           testModeOnly: true,
         })
       })
