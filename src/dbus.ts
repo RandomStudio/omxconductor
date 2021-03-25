@@ -99,7 +99,7 @@ export const setPosition = (dbusId: string, positionMs: number) =>
   })
 
 export const pause = (dbusId: string) =>
-  new Promise((resolve, reject) => {
+  new Promise<void>((resolve, reject) => {
     dBusVars()
       .then((vars) => {
         execPromise(`${vars} ${dBusMethod(dbusId, 'Pause')} >/dev/null`)
@@ -110,7 +110,7 @@ export const pause = (dbusId: string) =>
   })
 
 export const stop = (dbusId: string) =>
-  new Promise((resolve, reject) => {
+  new Promise<void>((resolve, reject) => {
     dBusVars()
       .then((vars) => {
         execPromise(`${vars} ${dBusMethod(dbusId, 'Stop')} >/dev/null`)
@@ -121,7 +121,7 @@ export const stop = (dbusId: string) =>
   })
 
 export const resume = (dbusId: string) =>
-  new Promise((resolve, reject) => {
+  new Promise<void>((resolve, reject) => {
     dBusVars()
       .then((vars) => {
         execPromise(`${vars} ${dBusMethod(dbusId, 'Play')} >/dev/null`)
