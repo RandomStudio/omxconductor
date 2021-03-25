@@ -112,14 +112,14 @@ If you are playing common formats such as H.264 and H.265 (recommended) then you
 
 ### Testing clients against local (linked) version
 
-You need to run `yarn link` in the `dist` folder (after building).
+You need to run `npm link` in the `dist` folder (after building).
 
 ### Quick build
 
 If you are testing on a Raspberry Pi and need a quick(er) build (no linting, no tests, etc.), run:
 
 ```
-yarn quickbuild
+npm run quickbuild
 ```
 
 ## Background
