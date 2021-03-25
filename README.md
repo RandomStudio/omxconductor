@@ -127,11 +127,3 @@ yarn quickbuild
 A successor to https://github.com/anselanza/omx-layers
 
 We control the omxplayer instance(s) after launch using [D-Bus](https://www.freedesktop.org/wiki/Software/dbus/), a message bus system that allows for communication between applications.
-
-This library was built using the very thorough [Typescript Library Starter](https://github.com/Hotell/typescript-lib-starter) to achieve:
-
-- TypeScript compilation
-- A proper test framework
-- Linting
-- Very nit-picking checks on `git commit`, `git push`, etc.
-- And [more cool stuff](https://github.com/Hotell/typescript-lib-starter/blob/master/.github/CONTRIBUTING.md#technical-overview)
