@@ -1,6 +1,6 @@
-const { Player } = require('omxconductor')
+const Player = require('omxconductor')
 
-const player = new Player('media/tenseconds.mp4', { loop: true })
+const player = new Player('media/tenseconds.mp4', { loop: false })
 console.log('omx config:\n', player.getSettings())
 
 player
@@ -9,16 +9,15 @@ player
     console.log('open result:', result)
 
     // this could be done here or on 'open' event
-    player.registerPositionTrigger(5000, (actualPosition) => {
+    player.registerPositionTrigger(5000, async (actualPosition) => {
       console.log('hit 5000ms trigger @', actualPosition)
       // player.seekAbsolute(0)
       // player.stop()
-      player.pause(() => {
-        setTimeout(() => {
-          console.log('resume now!')
-          player.resume()
-        }, 4000)
-      })
+      await player.pause()
+      setTimeout(() => {
+        console.log('resume now!')
+        player.resume()
+      }, 4000)
     })
   })
   .catch((err) => {

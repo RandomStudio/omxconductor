@@ -172,8 +172,12 @@ export class Player extends EventEmitter {
     if (this.settings.testModeOnly) {
       return { command, testModeOnly: true }
     } else {
-      await execPromise(`mkfifo omxpipe${this.settings.layer}`)
-      // ignore errors, e.g. already exists
+      try {
+        await execPromise(`mkfifo omxpipe${this.settings.layer}`)
+      } catch (e) {
+        // ignore errors, e.g. already exists
+      }
+
       exec(command, (err, stdout, stderr) => {
         // this block only executes when pipe is closed!
         this.emit('close', { err, stdout, stderr })
