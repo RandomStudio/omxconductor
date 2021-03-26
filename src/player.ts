@@ -64,6 +64,10 @@ export class Player extends EventEmitter {
     super()
     this.file = file
     this.settings = { ...defaultOptions, ...(options as PlayerSettings) }
+    if (this.settings.layer !== defaultOptions.layer) {
+      this.settings.dBusId = `${defaultOptions.dBusId}_layer${this.settings.layer}`
+    }
+    console.log('init player with settings', { ...this.settings })
     this.positionTriggers = []
     this.disableProgressChecks = false
     this.progressCheckIntervalTimer = null
