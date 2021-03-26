@@ -180,6 +180,7 @@ export class Player extends EventEmitter {
 
       exec(command, (err, stdout, stderr) => {
         // this block only executes when pipe is closed!
+        this.stopProgressCheck()
         this.emit('close', { err, stdout, stderr })
       })
 
@@ -197,31 +198,36 @@ export class Player extends EventEmitter {
     if (this.disableProgressChecks) {
       return
     }
-    const position = await getFloat(this.settings.dBusId, 'Position')
-    const duration = await getFloat(this.settings.dBusId, 'Duration')
 
-    if (this.positionTriggers.length > 0) {
-      this.positionTriggers.forEach((trigger) => {
-        if (
-          position / millToMicro >= trigger.positionMs &&
-          !trigger.alreadyTrigged
-        ) {
-          trigger.handler(position / millToMicro)
-          trigger.alreadyTrigged = true
-        }
-        if (
-          position / millToMicro < trigger.positionMs &&
-          trigger.alreadyTrigged
-        ) {
-          trigger.alreadyTrigged = false // reset
-        }
+    try {
+      const position = await getFloat(this.settings.dBusId, 'Position')
+      const duration = await getFloat(this.settings.dBusId, 'Duration')
+
+      if (this.positionTriggers.length > 0) {
+        this.positionTriggers.forEach((trigger) => {
+          if (
+            position / millToMicro >= trigger.positionMs &&
+            !trigger.alreadyTrigged
+          ) {
+            trigger.handler(position / millToMicro)
+            trigger.alreadyTrigged = true
+          }
+          if (
+            position / millToMicro < trigger.positionMs &&
+            trigger.alreadyTrigged
+          ) {
+            trigger.alreadyTrigged = false // reset
+          }
+        })
+      }
+      this.emit('progress', {
+        position,
+        duration,
+        progress: position / duration,
       })
+    } catch (e) {
+      console.warn('ignoring error in progress check; clip already stopped?')
     }
-    this.emit('progress', {
-      position,
-      duration,
-      progress: position / duration,
-    })
   }
 
   private scheduleProgressCheck = () => {
