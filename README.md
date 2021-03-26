@@ -13,7 +13,7 @@ npm install omxconductor
 Include the Player
 
 ```
-const { Player } = require('omxconductor')
+const Player = require('omxconductor')
 ```
 
 Instantiate the Player with media and optional settings (an object)
@@ -62,20 +62,19 @@ The list of available events so far, and a description of their meaning:
 
 This is where the real power comes in. You can tell the player to seek, pause, etc. while it's running, via your client application.
 
-All of the functions below feature an optional callback that is run as soon as the action has been completed (successfully or not). For example:
+All of the functions below are async (use Promises). For example:
 
 ```
-player.seekAbsolute(1000, () => {
-  console.log('we just jumped to the 1 second mark!');
-})
+await player.seekAbsolute(1000);
+console.log('we just jumped to the 1 second mark!');
 ```
 
 Here is a list of the available functions (so far); more coming soon...
 
-- `seekAbsolute = (positionMs: number, callback?: () => void)`: jump to the position in the clip (specified in milliseconds)
-- `pause = (callback?: () => void)`: pause playback (omxplayer instance is still running and progress will still be updated)
-- `resume = (callback?: () => void)`: resume playback if paused (has no effect if already playing)
-- `stop = (callback?: () => void)`: stop playback (omxplayer instance will actually quit, but no errors should be thrown)
+- `seekAbsolute = (positionMs: number)`: jump to the position in the clip (specified in milliseconds)
+- `pause = ()`: pause playback (omxplayer instance is still running and progress will still be updated)
+- `resume = ()`: resume playback if paused (has no effect if already playing)
+- `stop = ()`: stop playback (omxplayer instance will actually quit, but no errors should be thrown)
 
 ### Registering triggers
 

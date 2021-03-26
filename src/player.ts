@@ -124,14 +124,8 @@ export class Player extends EventEmitter {
     return status === PlayStatus.playing
   }
 
-  seekAbsolute = async (positionMs: number, callback?: () => void) => {
-    setPosition(this.settings.dBusId, positionMs)
-      .then(() => {
-        if (callback) {
-          callback()
-        }
-      })
-      .catch((err) => this.emit('error', err))
+  seekAbsolute = async (positionMs: number) => {
+    await setPosition(this.settings.dBusId, positionMs)
   }
 
   pause = async () => {
