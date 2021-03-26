@@ -14,29 +14,24 @@ interface ExecResult {
 }
 
 // TODO: this should be memoized...
-export const dBusVars = () =>
-  new Promise<string>((resolve, reject) => {
-    const USER = userInfo().username
+export const dBusVars = async (): Promise<string> => {
+  const USER = userInfo().username
 
-    const OMXPLAYER_DBUS_ADDR = `/tmp/omxplayerdbus.${USER}`
-    const OMXPLAYER_DBUS_PID = `/tmp/omxplayerdbus.${USER}.pid`
+  const OMXPLAYER_DBUS_ADDR = `/tmp/omxplayerdbus.${USER}`
+  const OMXPLAYER_DBUS_PID = `/tmp/omxplayerdbus.${USER}.pid`
 
-    execPromise(`cat ${OMXPLAYER_DBUS_ADDR}`)
-      .then((resultAddr: ExecResult) => {
-        const address = resultAddr.stdout
-        execPromise(`cat ${OMXPLAYER_DBUS_PID}`)
-          .then((resultPid: ExecResult) => {
-            const pid = resultPid.stdout
-            resolve(
-              `DBUS_SESSION_BUS_ADDRESS=${address} DBUS_SESSION_BUS_PID=${pid}`
-                .trim()
-                .replace('\n', ' ')
-            )
-          })
-          .catch((err) => reject(err))
-      })
-      .catch((err) => reject(err))
-  })
+  const resultAddress: ExecResult = await execPromise(
+    `cat ${OMXPLAYER_DBUS_ADDR}`
+  )
+  const address = resultAddress.stdout
+
+  const resultPid = await execPromise(`cat ${OMXPLAYER_DBUS_PID}`)
+  const pid = resultPid.stdout
+
+  return `DBUS_SESSION_BUS_ADDRESS=${address} DBUS_SESSION_BUS_PID=${pid}`
+    .trim()
+    .replace('\n', ' ')
+}
 
 const dBusProperty = (dbusId: string, property: string) =>
   `dbus-send --print-reply=literal --session --reply-timeout=${CONTROL_CHECK_INTERVAL_MS} --dest=${dbusId} /org/mpris/MediaPlayer2 org.freedesktop.DBus.Properties.${property}`
@@ -44,94 +39,50 @@ const dBusProperty = (dbusId: string, property: string) =>
 const dBusMethod = (dbusId: string, method: string) =>
   `dbus-send --print-reply=literal --session --dest=${dbusId} /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player.${method}`
 
-export const getPlayStatus = (dbusId: string) =>
-  new Promise<PlayStatus>((resolve, reject) => {
-    dBusVars()
-      .then((vars) => {
-        execPromise(`${vars} ${dBusProperty(dbusId, 'PlaybackStatus')}`)
-          .then((result) =>
-            resolve(
-              result.stdout.trim() === 'Playing'
-                ? PlayStatus.playing
-                : PlayStatus.paused
-            )
-          )
-          .catch((err) => reject(err))
-      })
-      .catch((err) => reject(err))
-  })
-
-const cleanDbusNumber = (res: string): number =>
-  Number(
-    res
-      .trim()
-      .replace('\n', '')
-      .split(' ')[1]
+export const getPlayStatus = async (dbusId: string) => {
+  const result = await execPromise(
+    `${await dBusVars()} ${dBusProperty(dbusId, 'PlaybackStatus')}`
   )
 
-export const getFloat = (dbusId: string, property: string) =>
-  new Promise<number>((resolve, reject) => {
-    dBusVars()
-      .then((vars) => {
-        execPromise(`${vars} ${dBusProperty(dbusId, property)}`)
-          .then((result) => resolve(cleanDbusNumber(result.stdout)))
-          .catch((err) => reject(err))
-      })
-      .catch((err) => reject(err))
-  })
+  return result.stdout.trim() === 'Playing'
+    ? PlayStatus.playing
+    : PlayStatus.paused
+}
+
+const cleanDbusNumber = (res: string): number =>
+  Number(res.trim().replace('\n', '').split(' ')[1])
+
+export const getFloat = async (
+  dbusId: string,
+  property: string
+): Promise<number> => {
+  const result = await execPromise(
+    `${await dBusVars()} ${dBusProperty(dbusId, property)}`
+  )
+  return cleanDbusNumber(result.stdout)
+}
 
 export const millToMicro = 1000
 
-export const setPosition = (dbusId: string, positionMs: number) =>
-  new Promise((resolve, reject) => {
-    dBusVars()
-      .then((vars) => {
-        execPromise(
-          `${vars} ${dBusMethod(
-            dbusId,
-            'SetPosition'
-          )} objpath:/not/used int64:${positionMs / millToMicro} >/dev/null`
-        )
-          .then((result) => resolve(result))
-          .catch((err) => reject(err))
-      })
-      .catch((err) => reject(err))
-  })
+export const setPosition = async (dbusId: string, positionMs: number) =>
+  execPromise(
+    `${await dBusVars()} ${dBusMethod(
+      dbusId,
+      'SetPosition'
+    )} objpath:/not/used int64:${positionMs / millToMicro} >/dev/null`
+  )
 
-export const pause = (dbusId: string) =>
-  new Promise<void>((resolve, reject) => {
-    dBusVars()
-      .then((vars) => {
-        execPromise(`${vars} ${dBusMethod(dbusId, 'Pause')} >/dev/null`)
-          .then(() => resolve())
-          .catch((err) => reject(err))
-      })
-      .catch((err) => reject(err))
-  })
+export const pause = async (dbusId: string) =>
+  execPromise(`${await dBusVars()} ${dBusMethod(dbusId, 'Pause')} >/dev/null`)
 
-export const stop = (dbusId: string) =>
-  new Promise<void>((resolve, reject) => {
-    dBusVars()
-      .then((vars) => {
-        execPromise(`${vars} ${dBusMethod(dbusId, 'Stop')} >/dev/null`)
-          .then(() => resolve())
-          .catch((err) => reject(err))
-      })
-      .catch((err) => reject(err))
-  })
+export const stop = async (dbusId: string) =>
+  execPromise(`${await dBusVars()} ${dBusMethod(dbusId, 'Stop')} >/dev/null`)
 
-export const resume = (dbusId: string) =>
-  new Promise<void>((resolve, reject) => {
-    dBusVars()
-      .then((vars) => {
-        execPromise(`${vars} ${dBusMethod(dbusId, 'Play')} >/dev/null`)
-          .then(() => resolve())
-          .catch((err) => reject(err))
-      })
-      .catch((err) => reject(err))
-  })
+export const resume = async (dbusId: string) =>
+  execPromise(`${await dBusVars()} ${dBusMethod(dbusId, 'Play')} >/dev/null`)
 
-const execPromise = (command: string) =>
+// Since exec is not (yet) Promisified, this function makes things easier
+export const execPromise = (command: string) =>
   new Promise<ExecResult>((resolve, reject) => {
     exec(command, (err, stdout, stderr) => {
       if (err) {

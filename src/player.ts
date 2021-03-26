@@ -1,5 +1,5 @@
 // tslint:disable:ordered-imports
-import fs from 'fs'
+import fs from 'fs/promises'
 import path from 'path'
 import {
   defaultOptions,
@@ -17,6 +17,8 @@ import {
   pause,
   stop,
   resume,
+  PlayStatus,
+  execPromise,
 } from './dbus'
 
 export enum AudioOutput {
@@ -75,50 +77,50 @@ export class Player extends EventEmitter {
     this.settings.testModeOnly = true
   }
 
-  waitForControl = () =>
+  waitForControl = async (): Promise<{
+    result: PlayStatus
+    attemptsLeft: number
+  }> =>
     new Promise((resolve, reject) => {
-      let attempts = 0
-      const interval = setInterval(() => {
-        attempts++
-        getPlayStatus(this.settings.dBusId)
-          .then((result) => {
+      let attemptsLeft = CONTROL_CHECK_MAX_ATTEMPTS
+
+      const interval = setInterval(async () => {
+        attemptsLeft--
+        try {
+          const result = await getPlayStatus(this.settings.dBusId)
+          clearInterval(interval)
+          resolve({ result, attemptsLeft })
+        } catch (err) {
+          if (attemptsLeft <= 0) {
             clearInterval(interval)
-            resolve({ result, attempts })
-          })
-          .catch((err) => {
-            if (attempts > CONTROL_CHECK_MAX_ATTEMPTS) {
-              reject({ err, attempts })
-            } // else ignore and try again
-          })
+            reject({ err, attemptsLeft })
+          } // else ignore, try again
+        }
       }, CONTROL_CHECK_INTERVAL_MS)
     })
 
-  open = (waitOnBlack = false) =>
-    new Promise((resolve, reject) => {
-      const filePath = path.resolve(this.file)
-      fs.stat(filePath, (err, stats) => {
-        if (err) {
-          reject({ filePath, err })
-        } else {
-          this.startOmxInstance(filePath)
-            .then((command) => {
-              this.emit('open', { filePath, command, playing: !waitOnBlack })
-              this.waitForControl()
-                .then((result) => {
-                  this.emit('ready', result)
-                  this.scheduleProgressCheck()
-                })
-                .catch((waitErr) => this.emit('error', waitErr))
-              resolve({ filePath, command, playing: !waitOnBlack })
-            })
-            .catch((startError) => {
-              reject({ filePath, err: startError })
-            })
-        }
-      })
-    })
+  open = async (
+    waitOnBlack = false
+  ): Promise<{ filePath: string; command: string; playing: boolean }> => {
+    const filePath = path.resolve(this.file)
+    try {
+      await fs.access(filePath)
+      const { command } = await this.startOmxInstance(filePath)
+      const result = await this.waitForControl()
+      this.emit('ready', result)
+      this.scheduleProgressCheck()
+      return { filePath, command, playing: !waitOnBlack }
+    } catch (accessError) {
+      throw Error('error accessing file or does not exist: ' + accessError)
+    }
+  }
 
-  seekAbsolute = (positionMs: number, callback?: () => void) => {
+  getIsPlaying = async () => {
+    const status = await getPlayStatus(this.settings.dBusId)
+    return status === PlayStatus.playing
+  }
+
+  seekAbsolute = async (positionMs: number, callback?: () => void) => {
     setPosition(this.settings.dBusId, positionMs)
       .then(() => {
         if (callback) {
@@ -128,38 +130,20 @@ export class Player extends EventEmitter {
       .catch((err) => this.emit('error', err))
   }
 
-  pause = (callback?: () => void) => {
-    pause(this.settings.dBusId)
-      .then(() => {
-        if (callback) {
-          callback()
-        }
-        this.emit('paused')
-      })
-      .catch((err) => this.emit('error', err))
+  pause = async () => {
+    await pause(this.settings.dBusId)
+    this.emit('paused')
   }
 
-  stop = (callback?: () => void) => {
+  stop = async () => {
     this.stopProgressCheck()
-    stop(this.settings.dBusId)
-      .then(() => {
-        if (callback) {
-          callback()
-        }
-        this.emit('stopped')
-      })
-      .catch((err) => this.emit('error', err))
+    await stop(this.settings.dBusId)
+    this.emit('stopped')
   }
 
-  resume = (callback?: () => void) => {
-    resume(this.settings.dBusId)
-      .then(() => {
-        if (callback) {
-          callback()
-        }
-        this.emit('resumed')
-      })
-      .catch((err) => this.emit('error', err))
+  resume = async () => {
+    await resume(this.settings.dBusId)
+    this.emit('resumed')
   }
 
   registerPositionTrigger = (
@@ -173,73 +157,67 @@ export class Player extends EventEmitter {
     })
   }
 
-  private startOmxInstance = (file: string) =>
-    new Promise((resolve, reject) => {
-      const command = `omxplayer ${settingsToArgs(file, this.settings).join(
-        ' '
-      )} < omxpipe${this.settings.layer}`
-      if (this.settings.testModeOnly) {
-        resolve({ command, testModeOnly: true })
-      } else {
-        exec(`mkfifo omxpipe${this.settings.layer}`, () => {
-          // ignore errors, e.g. already exists
-          exec(command, (err, stdout, stderr) => {
-            // this block only executes when pipe is closed!
-            this.emit('close', { err, stdout, stderr })
-          })
-          exec(`. > omxpipe${this.settings.layer}`, (err, stdout, stderr) => {
-            if (err) {
-              reject({ err, command })
-            } else {
-              resolve({ command, stdout, stderr, testModeOnly: false })
-            }
-          })
-        })
-      }
-    })
+  private startOmxInstance = async (
+    file: string
+  ): Promise<{
+    command: string
+    stdout?: string
+    stderr?: string
+    testModeOnly: boolean
+  }> => {
+    const command = `omxplayer ${settingsToArgs(file, this.settings).join(
+      ' '
+    )} < omxpipe${this.settings.layer}`
 
-  private progressCheck = () => {
-    let position: number
-    let duration: number
+    if (this.settings.testModeOnly) {
+      return { command, testModeOnly: true }
+    } else {
+      await execPromise(`mkfifo omxpipe${this.settings.layer}`)
+      // ignore errors, e.g. already exists
+      exec(command, (err, stdout, stderr) => {
+        // this block only executes when pipe is closed!
+        this.emit('close', { err, stdout, stderr })
+      })
+
+      const result = await execPromise(`. > omxpipe${this.settings.layer}`)
+      return {
+        command,
+        stdout: result.stdout,
+        stderr: result.stderr,
+        testModeOnly: false,
+      }
+    }
+  }
+
+  private progressCheck = async (): Promise<void> => {
     if (this.disableProgressChecks) {
       return
     }
-    getFloat(this.settings.dBusId, 'Position')
-      .then((value) => {
-        position = value
+    const position = await getFloat(this.settings.dBusId, 'Position')
+    const duration = await getFloat(this.settings.dBusId, 'Duration')
 
-        return getFloat(this.settings.dBusId, 'Duration')
-      })
-      .then((value) => {
-        duration = value
-        if (this.positionTriggers.length > 0) {
-          this.positionTriggers.forEach((trigger) => {
-            if (
-              position / millToMicro >= trigger.positionMs &&
-              !trigger.alreadyTrigged
-            ) {
-              trigger.handler(position / millToMicro)
-              trigger.alreadyTrigged = true
-            }
-            if (
-              position / millToMicro < trigger.positionMs &&
-              trigger.alreadyTrigged
-            ) {
-              trigger.alreadyTrigged = false // reset
-            }
-          })
+    if (this.positionTriggers.length > 0) {
+      this.positionTriggers.forEach((trigger) => {
+        if (
+          position / millToMicro >= trigger.positionMs &&
+          !trigger.alreadyTrigged
+        ) {
+          trigger.handler(position / millToMicro)
+          trigger.alreadyTrigged = true
         }
-        this.emit('progress', {
-          position,
-          duration,
-          progress: position / duration,
-        })
-      })
-      .catch((err) => {
-        if (!this.disableProgressChecks) {
-          this.emit('error', err)
+        if (
+          position / millToMicro < trigger.positionMs &&
+          trigger.alreadyTrigged
+        ) {
+          trigger.alreadyTrigged = false // reset
         }
       })
+    }
+    this.emit('progress', {
+      position,
+      duration,
+      progress: position / duration,
+    })
   }
 
   private scheduleProgressCheck = () => {
