@@ -261,6 +261,13 @@ const settingsToArgs = (file: string, settings: PlayerSettings): string[] => [
  * than normal, everything above is louder.
  * @returns Equivalent value in millibels
  */
-export const volumeToMillibels = (volume) => 2000.0 * Math.log10(volume);
+export const volumeToMillibels = (volume) => {
+  const mB = 2000.0 * Math.log10(volume);
+  if (isNaN(mB) || mB === -Infinity) {
+    return -4000; // effectively silent, but -Infinite not accepted
+  } else {
+    return mB;
+  }
+};
 
 export const millibelsToVolume = (mB) => Math.pow(10, mB / 2000.0);
