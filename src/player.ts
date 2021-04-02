@@ -1,13 +1,13 @@
 // tslint:disable:ordered-imports
-import fs from 'fs/promises'
-import path from 'path'
+import fs from "fs/promises";
+import path from "path";
 import {
   defaultOptions,
   CONTROL_CHECK_INTERVAL_MS,
   CONTROL_CHECK_MAX_ATTEMPTS,
-} from './defaults'
-import { exec } from 'child_process'
-import { EventEmitter } from 'events'
+} from "./defaults";
+import { exec } from "child_process";
+import { EventEmitter } from "events";
 
 import {
   getFloat,
@@ -19,130 +19,126 @@ import {
   resume,
   PlayStatus,
   execPromise,
-} from './dbus'
+} from "./dbus";
 
 export enum AudioOutput {
-  hdmi = 'hdmi',
-  local = 'local',
-  both = 'both',
+  hdmi = "hdmi",
+  local = "local",
+  both = "both",
 }
 
-export interface PlayerOptions {
-  layer?: number
-  dBusId?: string
-  audioOutput?: AudioOutput
-  backgroundColor?: string
-  noBackgroundColor?: boolean
-  loop?: boolean
-}
+export type UserPlayerOptions = Partial<PlayerSettings>;
 
 export interface PlayerSettings {
-  layer: number
-  dBusId: string
-  audioOutput: AudioOutput
-  backgroundColor: string
-  noBackgroundColor: boolean
-  loop: boolean
-  testModeOnly: boolean
-  progressInterval: number
+  layer: number;
+  dBusId: string;
+  audioOutput: AudioOutput;
+  backgroundColor: string;
+  noBackgroundColor: boolean;
+  loop: boolean;
+  testModeOnly: boolean;
+  progressInterval: number;
+  initVolume: number;
+  noKeys: boolean;
+  noOsd: boolean;
 }
 
 interface Trigger {
-  positionMs: number
-  handler: (triggeredPositionMs: number) => void
-  alreadyTrigged: boolean
+  positionMs: number;
+  handler: (triggeredPositionMs: number) => void;
+  alreadyTrigged: boolean;
 }
 
 export class Player extends EventEmitter {
-  private file: string
-  private settings: PlayerSettings
-  private positionTriggers: Trigger[]
-  private disableProgressChecks: boolean
-  private progressCheckIntervalTimer: NodeJS.Timer | null
+  private file: string;
+  private settings: PlayerSettings;
+  private positionTriggers: Trigger[];
+  private disableProgressChecks: boolean;
+  private progressCheckIntervalTimer: NodeJS.Timer | null;
 
-  constructor(file: string, options?: PlayerOptions) {
-    super()
-    this.file = file
-    this.settings = { ...defaultOptions, ...(options as PlayerSettings) }
+  constructor(file: string, options?: UserPlayerOptions) {
+    super();
+    this.file = file;
+    this.settings = { ...defaultOptions, ...(options as PlayerSettings) };
     if (this.settings.layer !== defaultOptions.layer) {
-      this.settings.dBusId = `${defaultOptions.dBusId}_layer${this.settings.layer}`
+      this.settings.dBusId = `${defaultOptions.dBusId}_layer${this.settings.layer}`;
     }
-    console.log('init player with settings', { ...this.settings })
-    this.positionTriggers = []
-    this.disableProgressChecks = false
-    this.progressCheckIntervalTimer = null
+    console.log("init player with settings", { ...this.settings });
+    this.positionTriggers = [];
+    this.disableProgressChecks = false;
+    this.progressCheckIntervalTimer = null;
   }
 
   getSettings = () => {
-    return this.settings
-  }
+    return this.settings;
+  };
 
   enableTestMode = () => {
-    this.settings.testModeOnly = true
-  }
+    this.settings.testModeOnly = true;
+  };
 
   waitForControl = async (): Promise<{
-    result: PlayStatus
-    attemptsLeft: number
+    result: PlayStatus;
+    attemptsLeft: number;
   }> =>
     new Promise((resolve, reject) => {
-      let attemptsLeft = CONTROL_CHECK_MAX_ATTEMPTS
+      let attemptsLeft = CONTROL_CHECK_MAX_ATTEMPTS;
 
       const interval = setInterval(async () => {
-        attemptsLeft--
+        attemptsLeft--;
         try {
-          const result = await getPlayStatus(this.settings.dBusId)
-          clearInterval(interval)
-          resolve({ result, attemptsLeft })
+          const result = await getPlayStatus(this.settings.dBusId);
+          clearInterval(interval);
+          resolve({ result, attemptsLeft });
         } catch (err) {
           if (attemptsLeft <= 0) {
-            clearInterval(interval)
-            reject({ err, attemptsLeft })
+            clearInterval(interval);
+            reject({ err, attemptsLeft });
           } // else ignore, try again
         }
-      }, CONTROL_CHECK_INTERVAL_MS)
-    })
+      }, CONTROL_CHECK_INTERVAL_MS);
+    });
 
   open = async (
     waitOnBlack = false
   ): Promise<{ filePath: string; command: string; playing: boolean }> => {
-    const filePath = path.resolve(this.file)
+    const filePath = path.resolve(this.file);
     try {
-      await fs.access(filePath)
-      const { command } = await this.startOmxInstance(filePath)
-      const result = await this.waitForControl()
-      this.emit('ready', result)
-      this.scheduleProgressCheck()
-      return { filePath, command, playing: !waitOnBlack }
+      await fs.access(filePath);
+      const { command } = await this.startOmxInstance(filePath);
+      const result = await this.waitForControl();
+      this.emit("ready", result);
+      this.scheduleProgressCheck();
+      return { filePath, command, playing: !waitOnBlack };
     } catch (accessError) {
-      throw Error('error accessing file or does not exist: ' + accessError)
+      throw Error("error accessing file or does not exist: " + accessError);
     }
-  }
+  };
 
   getIsPlaying = async () => {
-    const status = await getPlayStatus(this.settings.dBusId)
-    return status === PlayStatus.playing
-  }
+    const status = await getPlayStatus(this.settings.dBusId);
+    return status === PlayStatus.playing;
+  };
 
   seekAbsolute = async (positionMs: number) => {
-    await setPosition(this.settings.dBusId, positionMs)
-  }
+    await setPosition(this.settings.dBusId, positionMs);
+  };
 
   pause = async () => {
-    await pause(this.settings.dBusId)
-    this.emit('paused')
-  }
+    await pause(this.settings.dBusId);
+    this.emit("paused");
+  };
 
   stop = async () => {
-    this.stopProgressCheck()
-    await stop(this.settings.dBusId)
-    this.emit('stopped')
-  }
+    this.stopProgressCheck();
+    await stop(this.settings.dBusId);
+    this.emit("stopped");
+  };
 
   resume = async () => {
-    await resume(this.settings.dBusId)
-    this.emit('resumed')
-  }
+    await resume(this.settings.dBusId);
+    this.emit("resumed");
+  };
 
   registerPositionTrigger = (
     positionMs: number,
@@ -152,54 +148,54 @@ export class Player extends EventEmitter {
       positionMs,
       handler,
       alreadyTrigged: false,
-    })
-  }
+    });
+  };
 
   private startOmxInstance = async (
     file: string
   ): Promise<{
-    command: string
-    stdout?: string
-    stderr?: string
-    testModeOnly: boolean
+    command: string;
+    stdout?: string;
+    stderr?: string;
+    testModeOnly: boolean;
   }> => {
     const command = `omxplayer ${settingsToArgs(file, this.settings).join(
-      ' '
-    )} < omxpipe${this.settings.layer}`
+      " "
+    )} < omxpipe${this.settings.layer}`;
 
     if (this.settings.testModeOnly) {
-      return { command, testModeOnly: true }
+      return { command, testModeOnly: true };
     } else {
       try {
-        await execPromise(`mkfifo omxpipe${this.settings.layer}`)
+        await execPromise(`mkfifo omxpipe${this.settings.layer}`);
       } catch (e) {
         // ignore errors, e.g. already exists
       }
 
       exec(command, (err, stdout, stderr) => {
         // this block only executes when pipe is closed!
-        this.stopProgressCheck()
-        this.emit('close', { err, stdout, stderr })
-      })
+        this.stopProgressCheck();
+        this.emit("close", { err, stdout, stderr });
+      });
 
-      const result = await execPromise(`. > omxpipe${this.settings.layer}`)
+      const result = await execPromise(`. > omxpipe${this.settings.layer}`);
       return {
         command,
         stdout: result.stdout,
         stderr: result.stderr,
         testModeOnly: false,
-      }
+      };
     }
-  }
+  };
 
   private progressCheck = async (): Promise<void> => {
     if (this.disableProgressChecks) {
-      return
+      return;
     }
 
     try {
-      const position = await getFloat(this.settings.dBusId, 'Position')
-      const duration = await getFloat(this.settings.dBusId, 'Duration')
+      const position = await getFloat(this.settings.dBusId, "Position");
+      const duration = await getFloat(this.settings.dBusId, "Duration");
 
       if (this.positionTriggers.length > 0) {
         this.positionTriggers.forEach((trigger) => {
@@ -207,50 +203,64 @@ export class Player extends EventEmitter {
             position / millToMicro >= trigger.positionMs &&
             !trigger.alreadyTrigged
           ) {
-            trigger.handler(position / millToMicro)
-            trigger.alreadyTrigged = true
+            trigger.handler(position / millToMicro);
+            trigger.alreadyTrigged = true;
           }
           if (
             position / millToMicro < trigger.positionMs &&
             trigger.alreadyTrigged
           ) {
-            trigger.alreadyTrigged = false // reset
+            trigger.alreadyTrigged = false; // reset
           }
-        })
+        });
       }
-      this.emit('progress', {
+      this.emit("progress", {
         position,
         duration,
         progress: position / duration,
-      })
+      });
     } catch (e) {
-      console.warn('ignoring error in progress check; clip already stopped?')
+      console.warn("ignoring error in progress check; clip already stopped?");
     }
-  }
+  };
 
   private scheduleProgressCheck = () => {
     this.progressCheckIntervalTimer = setInterval(
       this.progressCheck,
       this.settings.progressInterval
-    )
-  }
+    );
+  };
 
   private stopProgressCheck = () => {
-    this.disableProgressChecks = true
+    this.disableProgressChecks = true;
     if (this.progressCheckIntervalTimer !== null) {
-      clearInterval(this.progressCheckIntervalTimer)
+      clearInterval(this.progressCheckIntervalTimer);
     }
-  }
+  };
 } // --------- Class end ---------------------------------------------
 
 const settingsToArgs = (file: string, settings: PlayerSettings): string[] => [
   `"${file}"`,
-  '-o',
+  "-o",
   settings.audioOutput,
-  settings.noBackgroundColor ? '' : `-b${settings.backgroundColor}`,
-  '--dbus_name',
+  settings.noBackgroundColor ? "" : `-b${settings.backgroundColor}`,
+  "--dbus_name",
   settings.dBusId,
-  settings.loop ? '--loop' : '',
-  '--layer',
+  settings.loop ? "--loop" : "",
+  "--layer",
   settings.layer.toString(),
-]
+  `--vol ${volumeToMillibels(settings.initVolume)}`,
+  settings.noKeys ? "--no-keys" : "",
+  settings.noOsd ? "--no-osd" : "",
+];
+
+/**
+ *
+ * @param volume As defined by the MPRIS specifications, this value should be
+ * greater than or equal to 0. 1 is the normal volume. Everything below is quieter
+ * than normal, everything above is louder.
+ * @returns Equivalent value in millibels
+ */
+export const volumeToMillibels = (volume) => 2000.0 * Math.log10(volume);
+
+export const millibelsToVolume = (mB) => Math.pow(10, mB / 2000.0);
