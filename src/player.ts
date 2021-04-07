@@ -111,7 +111,9 @@ export class Player extends EventEmitter {
       this.scheduleProgressCheck();
       return { filePath, command, playing: !waitOnBlack };
     } catch (accessError) {
-      throw Error("error accessing file or does not exist: " + accessError);
+      throw Error(
+        "error accessing file or does not exist: " + JSON.stringify(accessError)
+      );
     }
   };
 
