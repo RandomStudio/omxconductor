@@ -63,7 +63,7 @@ export class Player extends EventEmitter {
     if (this.settings.layer !== defaultOptions.layer) {
       this.settings.dBusId = `${defaultOptions.dBusId}_layer${this.settings.layer}`;
     }
-    console.log("init player with settings", { ...this.settings });
+    // console.log("init player with settings", { ...this.settings });
     this.positionTriggers = [];
     this.disableProgressChecks = false;
     this.progressCheckIntervalTimer = null;
@@ -222,7 +222,7 @@ export class Player extends EventEmitter {
         progress: position / duration,
       });
     } catch (e) {
-      console.warn("ignoring error in progress check; clip already stopped?");
+      // console.warn("ignoring error in progress check; clip already stopped?");
     }
   };
 
