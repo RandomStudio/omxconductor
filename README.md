@@ -13,7 +13,7 @@ npm install omxconductor
 Include the Player
 
 ```
-const { Player } = require('omxconductor')
+const Player = require('omxconductor')
 ```
 
 Instantiate the Player with media and optional settings (an object)
@@ -62,20 +62,19 @@ The list of available events so far, and a description of their meaning:
 
 This is where the real power comes in. You can tell the player to seek, pause, etc. while it's running, via your client application.
 
-All of the functions below feature an optional callback that is run as soon as the action has been completed (successfully or not). For example:
+All of the functions below are async (use Promises). For example:
 
 ```
-player.seekAbsolute(1000, () => {
-  console.log('we just jumped to the 1 second mark!');
-})
+await player.seekAbsolute(1000);
+console.log('we just jumped to the 1 second mark!');
 ```
 
 Here is a list of the available functions (so far); more coming soon...
 
-- `seekAbsolute = (positionMs: number, callback?: () => void)`: jump to the position in the clip (specified in milliseconds)
-- `pause = (callback?: () => void)`: pause playback (omxplayer instance is still running and progress will still be updated)
-- `resume = (callback?: () => void)`: resume playback if paused (has no effect if already playing)
-- `stop = (callback?: () => void)`: stop playback (omxplayer instance will actually quit, but no errors should be thrown)
+- `seekAbsolute = (positionMs: number)`: jump to the position in the clip (specified in milliseconds)
+- `pause = ()`: pause playback (omxplayer instance is still running and progress will still be updated)
+- `resume = ()`: resume playback if paused (has no effect if already playing)
+- `stop = ()`: stop playback (omxplayer instance will actually quit, but no errors should be thrown)
 
 ### Registering triggers
 
@@ -112,14 +111,14 @@ If you are playing common formats such as H.264 and H.265 (recommended) then you
 
 ### Testing clients against local (linked) version
 
-You need to run `yarn link` in the `dist` folder (after building).
+You need to run `npm link` in the `dist` folder (after building).
 
 ### Quick build
 
 If you are testing on a Raspberry Pi and need a quick(er) build (no linting, no tests, etc.), run:
 
 ```
-yarn quickbuild
+npm run quickbuild
 ```
 
 ## Background
@@ -127,11 +126,3 @@ yarn quickbuild
 A successor to https://github.com/anselanza/omx-layers
 
 We control the omxplayer instance(s) after launch using [D-Bus](https://www.freedesktop.org/wiki/Software/dbus/), a message bus system that allows for communication between applications.
-
-This library was built using the very thorough [Typescript Library Starter](https://github.com/Hotell/typescript-lib-starter) to achieve:
-
-- TypeScript compilation
-- A proper test framework
-- Linting
-- Very nit-picking checks on `git commit`, `git push`, etc.
-- And [more cool stuff](https://github.com/Hotell/typescript-lib-starter/blob/master/.github/CONTRIBUTING.md#technical-overview)
