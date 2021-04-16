@@ -41,7 +41,7 @@ export interface PlayerSettings {
   initVolume: number;
   noKeys: boolean;
   noOsd: boolean;
-  rotation: number;
+  orientation: number;
 }
 
 interface Trigger {
@@ -255,7 +255,7 @@ const settingsToArgs = (file: string, settings: PlayerSettings): string[] => [
   `--vol ${volumeToMillibels(settings.initVolume)}`,
   settings.noKeys ? "--no-keys" : "",
   settings.noOsd ? "--no-osd" : "",
-  `--rotation ${settings.rotation}`,
+  `--orientation ${settings.orientation}`,
 ];
 
 /**
