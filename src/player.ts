@@ -41,6 +41,7 @@ export interface PlayerSettings {
   initVolume: number;
   noKeys: boolean;
   noOsd: boolean;
+  rotation: number;
 }
 
 interface Trigger {
@@ -254,6 +255,7 @@ const settingsToArgs = (file: string, settings: PlayerSettings): string[] => [
   `--vol ${volumeToMillibels(settings.initVolume)}`,
   settings.noKeys ? "--no-keys" : "",
   settings.noOsd ? "--no-osd" : "",
+  `--rotation ${settings.rotation}`,
 ];
 
 /**
@@ -263,7 +265,7 @@ const settingsToArgs = (file: string, settings: PlayerSettings): string[] => [
  * than normal, everything above is louder.
  * @returns Equivalent value in millibels
  */
-export const volumeToMillibels = (volume) => {
+export const volumeToMillibels = (volume: number) => {
   const mB = 2000.0 * Math.log10(volume);
   if (isNaN(mB) || mB === -Infinity) {
     return -4000; // effectively silent, but -Infinite not accepted

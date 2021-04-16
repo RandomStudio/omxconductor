@@ -12,6 +12,7 @@ export const defaultOptions: PlayerSettings = {
   initVolume: 1,
   noKeys: true,
   noOsd: true,
+  rotation: 0,
 };
 
 export const CONTROL_CHECK_INTERVAL_MS = 500;
