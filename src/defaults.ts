@@ -5,7 +5,7 @@ export const defaultOptions: PlayerSettings = {
   dBusId: "org.mpris.MediaPlayer2.omxplayer",
   audioOutput: "local" as AudioOutput,
   backgroundColor: "0xff000000",
-  noBackgroundColor: false,
+  noBackgroundColor: true,
   loop: true,
   testModeOnly: false,
   progressInterval: 16,
