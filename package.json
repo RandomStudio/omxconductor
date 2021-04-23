@@ -1,6 +1,6 @@
 {
   "name": "omxconductor",
-  "version": "2.2.1",
+  "version": "2.2.2",
   "description": "Orchestrate omxplayer instances via NodeJS",
   "main": "dist/index.js",
   "keywords": [
