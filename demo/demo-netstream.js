@@ -10,6 +10,15 @@ player
   .then((result) => {
     console.log("open result:", result);
 
+    setTimeout(() => {
+      console.log("pause now; resume in 3s...");
+      player.pause();
+      setTimeout(() => {
+        console.log("resume now");
+        player.resume();
+      }, 3000);
+    }, 3000);
+
     // this could be done here or on 'open' event
     player.registerPositionTrigger(5000, async (actualPosition) => {
       console.log("hit 5000ms trigger @", actualPosition);
