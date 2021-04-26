@@ -3,13 +3,16 @@
 A convenient library for initiating and controlling video playback on [omxplayer](https://github.com/popcornmix/omxplayer) -- the command-line [OpenMAX](https://en.wikipedia.org/wiki/OpenMAX) media player built especially for Raspberry Pi -- via NodeJS.
 
 ## Check your GPU memory!
+
 If you intend to play more than 1 video simultaneously, you should make sure that your Raspberry Pi is configured with more than the default 64MB normally allocated to the GPU. Otherwise you will get strange crashes.
 
 To do it:
+
 ```
 sudo raspi-config
 ```
-...then pick `4 Performance Options`, then `P2 GPU Memory` and type a new value (128MB is good enough for 2 layers). 
+
+...then pick `4 Performance Options`, then `P2 GPU Memory` and type a new value (128MB is good enough for 2 layers).
 
 Reboot the machine.
 
@@ -27,7 +30,7 @@ Include the Player
 const Player = require('omxconductor')
 ```
 
-Instantiate the Player with media and optional settings (an object)
+Instantiate the Player with media (file path or network stream) and optional settings (an object)
 
 ```
 const player = new Player('media/bigbuckbunny.mp4', { loop: true })
