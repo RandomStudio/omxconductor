@@ -52,15 +52,15 @@ interface Trigger {
 }
 
 export class Player extends EventEmitter {
-  private file: string;
+  private fileOrUrl: string;
   private settings: PlayerSettings;
   private positionTriggers: Trigger[];
   private disableProgressChecks: boolean;
   private progressCheckIntervalTimer: NodeJS.Timer | null;
 
-  constructor(file: string, options?: UserPlayerOptions) {
+  constructor(fileOrUrl: string, options?: UserPlayerOptions) {
     super();
-    this.file = file;
+    this.fileOrUrl = fileOrUrl;
     this.settings = { ...defaultOptions, ...(options as PlayerSettings) };
     if (this.settings.layer !== defaultOptions.layer) {
       this.settings.dBusId = `${defaultOptions.dBusId}_layer${this.settings.layer}`;
@@ -79,7 +79,9 @@ export class Player extends EventEmitter {
     this.settings.testModeOnly = true;
   };
 
-  waitForControl = async (): Promise<{
+  waitForControl = async (
+    controlCheckInterval = CONTROL_CHECK_INTERVAL_MS
+  ): Promise<{
     result: PlayStatus;
     attemptsLeft: number;
   }> =>
@@ -98,20 +100,27 @@ export class Player extends EventEmitter {
             reject({ err, attemptsLeft });
           } // else ignore, try again
         }
-      }, CONTROL_CHECK_INTERVAL_MS);
+      }, controlCheckInterval);
     });
 
   open = async (
     waitOnBlack = false
-  ): Promise<{ filePath: string; command: string; playing: boolean }> => {
-    const filePath = path.resolve(this.file);
+  ): Promise<{ resourceUrl: string; command: string; playing: boolean }> => {
+    const isFile = !isNetStream(this.fileOrUrl);
+
+    const resourceUrl = isFile ? path.resolve(this.fileOrUrl) : this.fileOrUrl;
+
     try {
-      await fs.access(filePath);
-      const { command } = await this.startOmxInstance(filePath);
-      const result = await this.waitForControl();
+      if (isFile) {
+        await fs.access(resourceUrl);
+      }
+      const { command } = await this.startOmxInstance(resourceUrl);
+      const result = await this.waitForControl(
+        isFile ? CONTROL_CHECK_INTERVAL_MS : 1000
+      );
       this.emit("ready", result);
       this.scheduleProgressCheck();
-      return { filePath, command, playing: !waitOnBlack };
+      return { resourceUrl, command, playing: !waitOnBlack };
     } catch (accessError) {
       throw Error(
         "error accessing file or does not exist: " + JSON.stringify(accessError)
@@ -277,3 +286,6 @@ export const volumeToMillibels = (volume: number) => {
 };
 
 export const millibelsToVolume = (mB) => Math.pow(10, mB / 2000.0);
+
+const isNetStream = (fileOrUrl: string) =>
+  fileOrUrl.includes("rtsp://") || fileOrUrl.includes("udp://");
