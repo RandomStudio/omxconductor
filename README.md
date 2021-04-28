@@ -51,6 +51,30 @@ player
 
 See a working example in the `./demo/demo.js` file.
 
+## Omxplayer instance configuration
+
+The API provides some options which are converted into suitable omxplayer arguments, as well as sensible defaults. You provide these as key/value pairs in the `options` object when calling `new Player`
+
+The most common ones are shown below:
+
+```
+  layer: number;
+  backgroundColor: string;
+  loop: boolean;
+  initVolume: number;
+  orientation: number;
+  subtitlesPath?: string;
+  otherOmxFlags?: string;
+```
+
+The last one - `otherOmxFlags` - allows you to pass whatever additional omxplayer flags you need, as per https://github.com/popcornmix/omxplayer#synopsis
+
+So for example, if you wanted to pass a font size for subtitles, and also set an alpha value, you could append these options as follows:
+
+```
+const player = new Player('somevideo.mp4', { otherOmxFlags: '--alpha 100 --font-size 40'})
+```
+
 ## Hook into events during playback
 
 The `Player` class extends the NodeJS [EventEmitter](https://nodejs.org/api/events.html#events_class_eventemitter) class, so you can register your own listener functions. For example:
