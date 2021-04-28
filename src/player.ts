@@ -43,6 +43,7 @@ export interface PlayerSettings {
   noOsd: boolean;
   orientation: number;
   subtitlesPath?: string;
+  otherOmxFlags?: string;
 }
 
 interface Trigger {
@@ -258,6 +259,7 @@ const settingsToArgs = (file: string, settings: PlayerSettings): string[] => [
   settings.noOsd ? "--no-osd" : "",
   `--orientation ${settings.orientation}`,
   settings.subtitlesPath ? `--subtitles ${settings.subtitlesPath}` : "",
+  settings.otherOmxFlags,
 ];
 
 /**

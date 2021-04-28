@@ -1,35 +1,38 @@
-const Player = require('omxconductor')
+const Player = require("omxconductor");
 
-const player = new Player('media/tenseconds.mp4', { loop: false })
-console.log('omx config:\n', player.getSettings())
+const player = new Player("media/tenseconds.mp4", {
+  loop: false,
+  otherOmxFlags: "--win 500,500,1920,1080",
+});
+console.log("omx config:\n", player.getSettings());
 
 player
   .open()
   .then((result) => {
-    console.log('open result:', result)
+    console.log("open result:", result);
 
     // this could be done here or on 'open' event
     player.registerPositionTrigger(5000, async (actualPosition) => {
-      console.log('hit 5000ms trigger @', actualPosition)
+      console.log("hit 5000ms trigger @", actualPosition);
       // player.seekAbsolute(0)
       // player.stop()
-      await player.pause()
+      await player.pause();
       setTimeout(() => {
-        console.log('resume now!')
-        player.resume()
-      }, 4000)
-    })
+        console.log("resume now!");
+        player.resume();
+      }, 4000);
+    });
   })
   .catch((err) => {
-    console.error('error on open:', err)
-  })
+    console.error("error on open:", err);
+  });
 
-player.on('open', (result) => {
-  console.log('**************** open event:', result)
-})
+player.on("open", (result) => {
+  console.log("**************** open event:", result);
+});
 
-player.on('ready', (result) => {
-  console.log('**************** ready event:', result)
+player.on("ready", (result) => {
+  console.log("**************** ready event:", result);
 
   // EXAMPLE A: TRIGGER ON PROGRESS UPDATES YOURSELF
   // player.on('progress', (progress) => {
@@ -39,29 +42,29 @@ player.on('ready', (result) => {
   //     player.pause()
   //   }
   // })
-})
+});
 
-player.on('error', (err) => {
-  console.error('**************** error event:', err)
+player.on("error", (err) => {
+  console.error("**************** error event:", err);
   // process.exit(1)
-})
+});
 
-player.on('stopped', () => {
-  console.log('**************** stopped event')
-})
+player.on("stopped", () => {
+  console.log("**************** stopped event");
+});
 
-player.on('paused', () => {
-  console.log('**************** paused event')
-})
+player.on("paused", () => {
+  console.log("**************** paused event");
+});
 
-player.on('resumed', () => {
-  console.log('**************** resumed event')
-})
+player.on("resumed", () => {
+  console.log("**************** resumed event");
+});
 
-player.on('close', (result) => {
-  console.log('**************** pipe closed event:', result)
-  process.exit(0)
-})
+player.on("close", (result) => {
+  console.log("**************** pipe closed event:", result);
+  process.exit(0);
+});
 
 // player.on('progress', (info) => {
 //   console.log('progress all good:', info)
